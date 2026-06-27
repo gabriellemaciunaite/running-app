@@ -1,0 +1,293 @@
+<div id="view-profile" class="dashboard-view hidden">
+  <h1>Profile & Settings</h1>
+
+  <div class="profile-header-card">
+    <div class="profile-avatar-large">👤</div>
+    <div class="profile-meta">
+      <h2>{{ current_user.username }}</h2>
+      <p class="location-text">📍 Brighton and Hove, UK</p>
+    </div>
+  </div>
+
+  <div class="metrics-grid inline-stats">
+    <div class="card stat-card">
+        <h3>Total Runs</h3>
+        <p class="stat-value">--</p>
+    </div>
+    <div class="card stat-card">
+        <h3>KM Logged</h3>
+        <p class="stat-value">--.- km</p>
+    </div>
+    <div class="card stat-card">
+        <h3>5K PB</h3>
+        <p class="stat-value">--:--</p>
+    </div>
+</div>
+
+  <div class="settings-tables-container">
+    
+    <div class="settings-panel">
+      <h3>Personal Details</h3>
+      <form id="personalDetailsForm">
+        <table class="form-table">
+          <tr>
+            <td><label for="prof-age">Age</label></td>
+            <td><input type="number" id="prof-age" name="age" value="{{ current_user.age }}"></td>
+          </tr>
+          <tr>
+            <td><label for="prof-weight">Weight (kg)</label></td>
+            <td><input type="number" id="prof-weight" name="weight" value="{{ current_user.weight }}"></td>
+          </tr>
+          <tr>
+            <td><label for="prof-height">Height (cm)</label></td>
+            <td><input type="number" id="prof-height" name="height" value="{{ current_user.height }}"></td>
+          </tr>
+        </table>
+        <button type="submit" class="save-settings-btn">Save Details</button>
+      </form>
+    </div>
+
+    <div class="settings-panel">
+      <h3>Training Preferences</h3>
+      <form id="trainingPreferencesForm">
+        <table class="form-table">
+          <tr>
+            <td><label for="prof-goal">Goal</label></td>
+            <td>
+              <select id="prof-goal" name="target_goal">
+                <option value="5k" {% if current_user.target_goal == "5k" %}selected{% endif %}>5K</option>
+                <option value="10k" {% if current_user.target_goal == "10k" %}selected{% endif %}>10K</option>
+                <option value="half_marathon" {% if current_user.target_goal == "half_marathon" %}selected{% endif %}>Half Marathon</option>
+                <option value="marathon" {% if current_user.target_goal == "marathon" %}selected{% endif %}>Marathon</option>
+                <option value="ultra" {% if current_user.target_goal == "ultra" %}selected{% endif %}>Ultra Marathon</option>
+                <option value="fitness" {% if current_user.target_goal == "fitness" %}selected{% endif %}>General Fitness</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td><label for="prof-days">Weekly Days</label></td>
+            <td>
+              <select id="prof-days" name="weekly_days">
+                <option value="1-2" {% if current_user.weekly_days == "1-2" %}selected{% endif %}>1 - 2 days</option>
+                <option value="3-4" {% if current_user.weekly_days == "3-4" %}selected{% endif %}>3 - 4 days</option>
+                <option value="5-6" {% if current_user.weekly_days == "5-6" %}selected{% endif %}>5 - 6 days</option>
+                <option value="7" {% if current_user.weekly_days == "7" %}selected{% endif %}>7 days</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td><label for="prof-fitness">Fitness Level</label></td>
+            <td>
+              <select id="prof-fitness" name="fitness_level">
+                <option value="beginner" {% if current_user.fitness_level == "beginner" %}selected{% endif %}>Beginner</option>
+                <option value="intermediate" {% if current_user.fitness_level == "intermediate" %}selected{% endif %}>Intermediate</option>
+                <option value="advanced" {% if current_user.fitness_level == "advanced" %}selected{% endif %}>Advanced</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+        <button type="submit" class="save-settings-btn">Save Preferences</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<style>
+    /* Profile Element Layout Rules */
+    .profile-header-card {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 24px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 24px;
+    }
+
+    .profile-avatar-large {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: #f1f3f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-right: 20px;
+    }
+
+    .profile-meta h2 {
+    margin: 0 0 4px 0;
+    font-size: 22px;
+    font-weight: 600;
+    }
+
+    .location-text {
+    margin: 0;
+    font-size: 14px;
+    color: #6c757d;
+    }
+
+    .stat-value {
+    color: #0066cc !important; /* Emphasize blank state placeholders */
+    }
+
+    /* Side-by-Side Flex Layout Configuration Grid */
+    .settings-tables-container {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap; /* Allows stacking seamlessly if display space cuts narrow */
+    margin-top: 24px;
+    }
+
+    .settings-panel {
+    flex: 1;
+    min-width: 320px; /* Forces wrap on mobile layouts */
+    background-color: #ffffff;
+    padding: 24px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    box-sizing: border-box;
+    }
+
+    .settings-panel h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    border-bottom: 2px solid #f1f3f5;
+    padding-bottom: 10px;
+    color: #495057;
+    }
+
+    /* Modifying standard tables into form property alignment grids */
+    table.form-table {
+    width: 100%;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    margin-bottom: 20px;
+    }
+
+    table.form-table tr td {
+    padding: 10px 0;
+    border-bottom: none;
+    }
+
+    table.form-table tr td:first-child {
+    width: 40%;
+    font-weight: 500;
+    color: #495057;
+    }
+
+    table.form-table input,
+    table.form-table select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    }
+
+    table.form-table input:focus,
+    table.form-table select:focus {
+    outline: none;
+    border-color: #0066cc;
+    }
+
+    .save-settings-btn {
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.15s ease;
+    }
+
+    .save-settings-btn:hover {
+    background-color: #0052a3;
+    }
+
+    .metrics-grid.inline-stats {
+    display: flex;
+    flex-direction: row; /* Forces horizontal alignment */
+    gap: 20px;           /* Spacing between the cards */
+    width: 100%;         /* Uses full width of content area */
+    margin-bottom: 24px;
+    }
+
+    .metrics-grid.inline-stats .stat-card {
+    flex: 1;             /* Distributes width evenly across all 3 cards */
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    box-sizing: border-box;
+    }
+
+    .metrics-grid.inline-stats .stat-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    }
+
+    .metrics-grid.inline-stats .stat-card p {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #0066cc;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        handleFormSubmit("personalDetailsForm");
+        handleFormSubmit("trainingPreferencesForm");
+    });
+    function handleFormSubmit(formId, successCallback) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            const formData = new FormData(form);
+            const payload = Object.fromEntries(formData.entries());
+            const saveSettingsBtn = form.querySelector(".save-settings-btn");
+            const originalBtnText = saveSettingsBtn.textContent;
+            saveSettingsBtn.disabled = true;
+            saveSettingsBtn.textContent = "Saving...";
+            fetch("/customize", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`Failed to save form: ${formId}`);
+                return response.json();
+            })
+            .then(data => {
+                saveSettingsBtn.textContent = "Saved! ✓";
+                saveSettingsBtn.style.backgroundColor = "#28a745"; 
+                setTimeout(() => {
+                    saveSettingsBtn.disabled = false;
+                    saveSettingsBtn.textContent = originalBtnText;
+                    saveSettingsBtn.style.backgroundColor = ""; 
+                }, 2000);
+                if (successCallback) successCallback(data);
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Something went wrong saving your settings.");
+                
+                saveSettingsBtn.disabled = false;
+                saveSettingsBtn.textContent = originalBtnText;
+            });
+        });
+    }
+</script>

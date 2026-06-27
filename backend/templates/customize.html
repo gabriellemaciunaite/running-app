@@ -1,0 +1,186 @@
+<div class="onboarding-container">
+  <div class="progress-container">
+    <div id="progress-bar"></div>
+  </div>
+
+  <form id="onboardingForm">
+    <div id="step-1" class="form-step">
+      <h2>What is your fitness level?</h2>
+      <p><small>(Can be adjusted later)</small></p>
+      <select name="fitness_level" required>
+        <option value="" disabled selected>Select your level</option>
+        <option value="beginner">Beginner (Just starting out)</option>
+        <option value="intermediate">Intermediate (Run consistently)</option>
+        <option value="advanced">Advanced (Experienced racer)</option>
+      </select>
+    </div>
+
+    <div id="step-2" class="form-step hidden">
+      <h2>What is your target goal?</h2>
+      <select name="target_goal" required>
+        <option value="" disabled selected>Select a goal</option>
+        <option value="5k">5K</option>
+        <option value="10k">10K</option>
+        <option value="half_marathon">Half Marathon</option>
+        <option value="marathon">Marathon</option>
+        <option value="ultra">Ultra Marathon</option>
+        <option value="fitness">General Fitness / Base Building</option>
+      </select>
+    </div>
+
+    <div id="step-3" class="form-step hidden">
+      <h2>Tell us about yourself</h2>
+      <div class="input-group">
+        <label>Age</label>
+        <input type="number" name="age" required min="1" max="120">
+        <label>Weight (kg / lbs)</label>
+        <input type="number" name="weight" required min="1">
+        <label>Height (cm / inches)</label>
+        <input type="number" name="height" required min="1">
+      </div>
+    </div>
+
+    <div id="step-4" class="form-step hidden">
+      <h2>How many weekly run days?</h2>
+      <select name="weekly_days" required>
+        <option value="" disabled selected>Select days per week</option>
+        <option value="1-2">1 - 2 days</option>
+        <option value="3-4">3 - 4 days</option>
+        <option value="5-6">5 - 6 days</option>
+        <option value="7">7 days</option>
+      </select>
+    </div>
+
+    <div class="button-container">
+      <button type="button" id="prevBtn" style="visibility: hidden;">Back</button>
+      <button type="button" id="nextBtn">Continue</button>
+    </div>
+  </form>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    let currentStep = 1;
+    const totalSteps = 4;
+
+    const form = document.getElementById("onboardingForm");
+    const nextBtn = document.getElementById("nextBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const progressBar = document.getElementById("progress-bar");
+
+    function updateForm() {
+        document.querySelectorAll(".form-step").forEach((step, index) => {
+        if (index === currentStep - 1) {
+            step.classList.remove("hidden");
+        } else {
+            step.classList.add("hidden");
+        }
+        });
+
+        progressBar.style.width = `${(currentStep / totalSteps) * 100}%`;
+
+        if (currentStep === 1) {
+            prevBtn.style.visibility = "hidden";
+        } else {
+            prevBtn.style.visibility = "visible";
+        }
+        if (currentStep === totalSteps) {
+            nextBtn.textContent = "Submit Profile";
+        } else {
+            nextBtn.textContent = "Continue";
+        }
+    }
+
+    nextBtn.addEventListener("click", function () {
+        const currentStepInputs = document.querySelectorAll(`#step-${currentStep} [required]`);
+        let valid = true;
+        
+        currentStepInputs.forEach(input => {
+        if (!input.checkValidity()) {
+            input.reportValidity();
+            valid = false;
+        }
+        });
+
+        if (!valid) return;
+
+        if (currentStep < totalSteps) {
+            currentStep++;
+            updateForm();
+        } else {
+            submitData();
+        }
+    });
+
+    prevBtn.addEventListener("click", function () {
+        if (currentStep > 1) {
+            currentStep--;
+            updateForm();
+        }
+    });
+
+    function submitData() {
+        const formData = new FormData(form);
+        const payload = Object.fromEntries(formData.entries());
+
+        nextBtn.disabled = true;
+        nextBtn.textContent = "Saving...";
+
+        fetch("/customize", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+        })
+        .then(response => {
+        if (!response.ok) throw new Error("Network response error");
+        return response.json();
+        })
+        .then(data => {
+        window.location.href = "/dashboard"; 
+        })
+        .catch(error => {
+        console.error("Error:", error);
+        alert("Something went wrong saving your settings.");
+        nextBtn.disabled = false;
+        nextBtn.textContent = "Submit Profile";
+        });
+    }
+    });
+</script>
+
+<style>
+    .form-step.hidden {
+    display: none;
+    }
+
+    .onboarding-container {
+    max-w: 400px;
+    margin: 40px auto;
+    font-family: sans-serif;
+    }
+    .progress-container {
+    width: 100%;
+    background-color: #f0f0f0;
+    height: 8px;
+    margin-bottom: 20px;
+    }
+    #progress-bar {
+    width: 25%;
+    height: 100%;
+    background-color: #0066cc;
+    }
+    .input-group {
+    margin-bottom: 15px;
+    }
+    .input-group label {
+    display: block;
+    margin-bottom: 5px;
+    }
+    .button-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    }
+</style>

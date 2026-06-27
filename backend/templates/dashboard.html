@@ -1,0 +1,265 @@
+<div class="dashboard-layout">
+  <header class="top-navbar">
+    <div class="brand">RunOS</div>
+    <div class="nav-right">
+      <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <!-- TRAINING SECTION -->
+        <div class="nav-section">
+          <span class="section-header">TRAINING</span>
+          <button class="nav-item active" data-target="live-session">
+            <span class="icon">⏱</span> Live Session
+          </button>
+          <button class="nav-item" data-target="workout-plan">
+            <span class="icon">🏃‍♂️</span> Workout Plan
+          </button>
+        </div>
+
+        <!-- SOCIAL SECTION -->
+        <div class="nav-section">
+          <span class="section-header">SOCIAL</span>
+          <button class="nav-item" data-target="leaderboard">
+            <span class="icon">🏆</span> Leaderboard
+          </button>
+        </div>
+
+        <!-- ACCOUNT SECTION -->
+        <div class="nav-section">
+          <span class="section-header">ACCOUNT</span>
+          <button class="nav-item" data-target="profile">
+            <span class="icon">👤</span> Profile
+          </button>
+        </div>
+      </nav>
+
+      <!-- USER PROFILE FOOTER -->
+      <footer class="sidebar-footer">
+        <div class="user-avatar">👤</div>
+        <div class="user-info">
+          <span class="user-name">{{ current_user.username }}</span>
+          <span class="user-points">0 pts</span>
+        </div>
+      </footer>
+    </aside>
+
+    <!-- MAIN MAIN CONTENT DISPLAY AREA -->
+    <main class="content-area">
+        <div id="view-live-session" class="dashboard-view">
+            <h1>⏱ Live Session Tracker</h1>
+            <div class="metrics-grid">
+            <div class="card"><h3>Current Pace</h3><p>0:00 /km</p></div>
+            <div class="card"><h3>Distance</h3><p>0.00 km</p></div>
+            </div>
+            <button id="startRunBtn">Start Run</button>
+        </div>
+
+        <div id="view-workout-plan" class="dashboard-view hidden">
+            <h1>🏃‍♂️ Your Workout Plan</h1>
+            <p>Here is your schedule for the week:</p>
+            <ul>
+            <li>Monday: 5k Easy Run</li>
+            <li>Wednesday: Interval Training</li>
+            </ul>
+        </div>
+
+        <div id="view-leaderboard" class="dashboard-view hidden">
+            <h1>🏆 Community Leaderboard</h1>
+            <table>
+            <tr><th>Rank</th><th>Runner</th><th>Distance</th></tr>
+            <tr><td>1</td><td>Alice</td><td>42.2 km</td></tr>
+            </table>
+        </div>
+
+        {% include 'partials/profile.html' %}
+    </main>
+
+  </div>
+</div>
+
+
+
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        height: 100%;
+        background-color: #f8f9fa;
+    }
+
+    .dashboard-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+
+    .top-navbar {
+        height: 60px;
+        background-color: #ffffff;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 24px;
+        box-sizing: border-box;
+    }
+
+    .brand {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: #1a1a1a;
+    }
+
+    .logout-btn {
+        text-decoration: none;
+        color: #dc3545;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 6px;
+        transition: background-color 0.2s;
+    }
+
+    .logout-btn:hover {
+        background-color: #fff5f5;
+    }
+
+    .main-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .sidebar {
+        width: 260px;
+        background-color: #ffffff;
+        border-right: 1px solid #e9ecef;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .sidebar-nav {
+        padding: 24px 16px;
+    }
+
+    .nav-section {
+        margin-bottom: 24px;
+    }
+
+    .section-header {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: #adb5bd;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        padding-left: 12px;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        background: none;
+        border: none;
+        padding: 10px 12px;
+        border-radius: 8px;
+        text-align: left;
+        font-size: 14px;
+        font-weight: 500;
+        color: #495057;
+        cursor: pointer;
+        margin-bottom: 4px;
+        transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+        background-color: #f1f3f5;
+        color: #1a1a1a;
+    }
+
+    .nav-item.active {
+        background-color: #e7f5ff;
+        color: #0066cc;
+        font-weight: 600;
+    }
+
+    .nav-item .icon {
+        margin-right: 12px;
+        font-size: 16px;
+    }
+
+    .sidebar-footer {
+        padding: 16px;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        align-items: center;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f1f3f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-right: 12px;
+    }
+
+    .user-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .user-points {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .content-area {
+        flex: 1;
+        padding: 40px;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+</style>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const navItems = document.querySelectorAll(".nav-item");
+        const views = document.querySelectorAll(".dashboard-view");
+
+        navItems.forEach(item => {
+            item.addEventListener("click", function () {
+            navItems.forEach(btn => btn.classList.remove("active"));
+            this.classList.add("active");
+            views.forEach(view => view.classList.add("hidden"));
+            const target = this.getAttribute("data-target");
+            const targetView = document.getElementById(`view-${target}`);
+            if (targetView) {
+                targetView.classList.remove("hidden");
+            }
+            });
+        });
+    });
+</script>
