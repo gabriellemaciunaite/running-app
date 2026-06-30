@@ -1,6 +1,8 @@
 from extensions import db
 from flask_login import UserMixin
 from datetime import datetime
+from pydantic import BaseModel, Field
+from typing import List
 
 class User(UserMixin, db.Model):
     __tablename__ = "user"
@@ -21,15 +23,43 @@ class RunningPlan(db.Model):
     __tablename__ = "running_plan"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    workouts = db.relationship("Workout", backref="plan", cascade="all, delete-orphan")
+    days = db.relationship("WorkoutDay", backref="plan", cascade="all, delete-orphan")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    weeks_count = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
 
-class Workout(db.Model):
-    __tablename__ = "workout"
+class WorkoutDay(db.Model):
+    __tablename__ = "workout_day"
     id = db.Column(db.Integer, primary_key=True)
-    day_number = db.Column(db.Integer, nullable=False)
-    workout_type = db.Column(db.String(50), nullable=False)
-    distance_km = db.Column(db.Float, nullable=False)
-    completed = db.Column(db.Boolean, default=False)
+    day_name = db.Column(db.Integer, nullable=False)
     plan_id = db.Column(db.Integer, db.ForeignKey("running_plan.id"), nullable=False)
+    exercises = db.relationship("Exercise", backref="workout_day", cascade="all, delete-orphan")
+
+class Exercise(db.Model):
+    __tablename__ = "exercise"
+    id = db.Column(db.Integer, primary_key=True)
+    day_id = db.Column(db.Integer, db.ForeignKey("workout_day.id"), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    sets = db.Column(db.Integer)
+    reps = db.Column(db.String(50))
+    completed = db.Column(db.Boolean, default=False)
+    workout_type = db.Column(db.String(50), nullable=False)
+    time = db.Column(db.String(50))
+    description = db.Column(db.String(150))
+
+
+
+class OpenAIExercise(BaseModel):
+    name: str = Field(description="The name of the exercise")
+    sets: int = Field(description="The number of sets of the exercise if 'strength' is chosen")
+    reps: str = Field(description="The number of reps of the exercise if 'strength' is chosen")
+    workout_type: str = Field(description="This option is either 'cardio' for running or 'strength' for otherwise/general")
+    time: str = Field(description="The duration of the exercise if 'cardio' is chosen")
+    description: str = Field(description="A short sentence describing the exercise")
+
+class OpenAIWorkoutDay(BaseModel):
+    day_name: str = Field(description="e.g., 'Day 1: Upper Body'")
+    exercises: List[OpenAIExercise]
+
+class OpenAIPlanSchema(BaseModel):
+    name: str = Field(description="Catchy title for this specific routine")
+    days: List[OpenAIWorkoutDay]

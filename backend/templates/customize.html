@@ -59,7 +59,7 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", function () {
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -69,85 +69,81 @@
     const progressBar = document.getElementById("progress-bar");
 
     function updateForm() {
-        document.querySelectorAll(".form-step").forEach((step, index) => {
-        if (index === currentStep - 1) {
-            step.classList.remove("hidden");
-        } else {
-            step.classList.add("hidden");
-        }
-        });
+      document.querySelectorAll(".form-step").forEach((step, index) => {
+      if (index === currentStep - 1) {
+        step.classList.remove("hidden");
+      } else {
+        step.classList.add("hidden");
+      }
+      });
+      progressBar.style.width = `${(currentStep / totalSteps) * 100}%`;
 
-        progressBar.style.width = `${(currentStep / totalSteps) * 100}%`;
-
-        if (currentStep === 1) {
-            prevBtn.style.visibility = "hidden";
-        } else {
-            prevBtn.style.visibility = "visible";
-        }
-        if (currentStep === totalSteps) {
-            nextBtn.textContent = "Submit Profile";
-        } else {
-            nextBtn.textContent = "Continue";
-        }
+      if (currentStep === 1) {
+        prevBtn.style.visibility = "hidden";
+      } else {
+        prevBtn.style.visibility = "visible";
+      }
+      if (currentStep === totalSteps) {
+        nextBtn.textContent = "Submit Profile";
+      } else {
+        nextBtn.textContent = "Continue";
+      }
     }
 
     nextBtn.addEventListener("click", function () {
-        const currentStepInputs = document.querySelectorAll(`#step-${currentStep} [required]`);
-        let valid = true;
-        
-        currentStepInputs.forEach(input => {
+      const currentStepInputs = document.querySelectorAll(`#step-${currentStep} [required]`);
+      let valid = true;
+      
+      currentStepInputs.forEach(input => {
         if (!input.checkValidity()) {
-            input.reportValidity();
-            valid = false;
+          input.reportValidity();
+          valid = false;
         }
-        });
+      });
 
-        if (!valid) return;
-
-        if (currentStep < totalSteps) {
-            currentStep++;
-            updateForm();
-        } else {
-            submitData();
-        }
+      if (!valid) return;
+      if (currentStep < totalSteps) {
+        currentStep++;
+        updateForm();
+      } else {
+        submitData();
+      }
     });
 
     prevBtn.addEventListener("click", function () {
-        if (currentStep > 1) {
-            currentStep--;
-            updateForm();
-        }
+      if (currentStep > 1) {
+        currentStep--;
+        updateForm();
+      }
     });
 
     function submitData() {
-        const formData = new FormData(form);
-        const payload = Object.fromEntries(formData.entries());
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
 
-        nextBtn.disabled = true;
-        nextBtn.textContent = "Saving...";
+      nextBtn.disabled = true;
+      nextBtn.textContent = "Saving...";
 
-        fetch("/customize", {
+      fetch("/customize", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify(payload)
-        })
-        .then(response => {
+      })
+      .then(response => {
         if (!response.ok) throw new Error("Network response error");
         return response.json();
-        })
-        .then(data => {
+      })
+      .then(data => {
         window.location.href = "/dashboard"; 
-        })
-        .catch(error => {
+      })
+      .catch(error => {
         console.error("Error:", error);
         alert("Something went wrong saving your settings.");
         nextBtn.disabled = false;
         nextBtn.textContent = "Submit Profile";
-        });
+      });
     }
-    });
+  });
 </script>
 
 <style>

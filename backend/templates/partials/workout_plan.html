@@ -1,0 +1,210 @@
+<div id="view-workout-plan" class="dashboard-view hidden">
+  
+  <div class="profile-header-card workout-header">
+    <div class="profile-meta">
+      <h2>Your Training Schedule</h2>
+      <p class="location-text" id="plan-meta-subtitle">
+        {% if current_user.plans[0] %}
+          Active Plan: <strong>{{ current_user.plans[0].name }}</strong> (Created {{ current_user.plans[0].created_at.strftime('%Y-%m-%d') }})
+        {% else %}
+          No active workout plan found. Generate one below to match your preferences.
+        {% endif %}
+      </p>
+    </div>
+    
+    <button id="generateWorkoutBtn" class="save-settings-btn" {% if current_user.plans[0] %}style="background-color: #6c757d;"{% endif %}>
+      {% if current_user.plans[0] %}Regenerate Plan{% else %}Generate Custom Workout{% endif %}
+    </button>
+  </div>
+
+  <div id="workout-loading-spinner" class="card hidden" style="text-align: center; padding: 40px; margin-bottom: 24px;">
+    <p style="font-weight: 600; color: #0066cc; margin: 0;">⚙️ Generating your custom routine data... Please wait.</p>
+  </div>
+
+  <div id="active-workout-workspace" class="{% if not current_user.plans[0] %}hidden{% endif %}">
+    
+    <div class="settings-tables-container workout-days-grid">
+      {% if current_user.plans[0] %}
+        {% for day in current_user.plans[0].days %}
+          <div class="settings-panel workout-day-card">
+            <div class="day-card-header">
+              <h3>{{ day.day_name }}</h3>
+            </div>
+            
+            <ul class="exercise-list">
+              {% for exercise in day.exercises %}
+                <li class="exercise-item-row {% if exercise.completed %}exercise-done{% endif %}">
+                  <label class="exercise-checkbox-label">
+                    <input type="checkbox" class="exercise-toggle-cb" data-exercise-id="{{ exercise.id }}" {% if exercise.completed %}checked{% endif %}>
+                    <span class="custom-cb-visual"></span>
+                  </label>
+                  
+                  <div class="exercise-details">
+                    <span class="exercise-name">{{ exercise.name }}</span>
+                    <span class="exercise-metrics-badge">
+                      {% if exercise.workout_type == "strength" %}
+                        💪 {{ exercise.sets }} sets × {{ exercise.reps }}
+                      {% else %}
+                        🏃‍♂️ {{ exercise.time }} (Cardio)
+                      {% endif %}
+                    </span>
+                    {% if exercise.description %}
+                      <p class="exercise-desc-text">{{ exercise.description }}</p>
+                    {% endif %}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    
+  </div>
+</div>
+
+
+<style>
+    /* Workout-specific overrides and extensions */
+.workout-header {
+  justify-content: space-between;
+}
+
+.workout-days-grid {
+  align-items: flex-start;
+}
+
+.workout-day-card {
+  min-width: 340px;
+}
+
+.day-card-header h3 {
+  color: #0066cc !important;
+  margin-bottom: 16px !important;
+}
+
+.exercise-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.exercise-item-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f3f5;
+  transition: opacity 0.2s ease;
+}
+
+.exercise-item-row:last-child {
+  border-bottom: none;
+}
+
+/* Strikethrough completed styles visually */
+.exercise-item-row.exercise-done .exercise-name {
+  text-decoration: line-through;
+  color: #adb5bd;
+}
+.exercise-item-row.exercise-done .exercise-metrics-badge {
+  color: #adb5bd;
+}
+.exercise-item-row.exercise-done .exercise-desc-text {
+  color: #dee2e6;
+}
+
+/* Checkbox Alignment Framework */
+.exercise-checkbox-label {
+  margin-right: 14px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.exercise-toggle-cb {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.exercise-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.exercise-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.exercise-metrics-badge {
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+  margin-top: 2px;
+}
+
+.exercise-desc-text {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #6c757d;
+  line-height: 1.4;
+}
+</style>
+
+<script>
+const genWorkoutBtn = document.getElementById("generateWorkoutBtn");
+const spinner = document.getElementById("workout-loading-spinner");
+const workspace = document.getElementById("active-workout-workspace");
+
+if (genWorkoutBtn) {
+  genWorkoutBtn.addEventListener("click", function () {
+    genWorkoutBtn.disabled = true;
+    spinner.classList.remove("hidden");
+    workspace.classList.add("hidden");
+
+    fetch("/generate_workout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    })
+    .then(response => {
+      if (!response.ok) throw new Error("Error occurred when generating a workout plan.");
+      return response.json();
+    })
+    .then(data => {
+      window.location.reload();
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      alert("Failed to build workout data.");
+      genWorkoutBtn.disabled = false;
+      spinner.classList.add("hidden");
+      workspace.classList.remove("hidden");
+    });
+  });
+}
+
+const workspaceArea = document.getElementById("active-workout-workspace");
+if (workspaceArea) {
+  workspaceArea.addEventListener("change", function (event) {
+    if (event.target.classList.contains("exercise-toggle-cb")) {
+      const cb = event.target;
+      const exerciseId = cb.getAttribute("data-exercise-id");
+      const rowItem = cb.closest(".exercise-item-row");
+      const isCompleted = cb.checked;
+      if (isCompleted) {
+        rowItem.classList.add("exercise-done");
+      } else {
+        rowItem.classList.remove("exercise-done");
+      }
+      fetch(`/toggle_exercise/${exerciseId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: isCompleted })
+      })
+      .catch(err => console.error("Error occurred:", err));
+    }
+  });
+}
+</script>

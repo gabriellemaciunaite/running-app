@@ -247,47 +247,45 @@
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        handleFormSubmit("personalDetailsForm");
-        handleFormSubmit("trainingPreferencesForm");
+  document.addEventListener("DOMContentLoaded", function () {
+    handleFormSubmit("personalDetailsForm");
+    handleFormSubmit("trainingPreferencesForm");
+  });
+  function handleFormSubmit(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+      const saveSettingsBtn = form.querySelector(".save-settings-btn");
+      const originalBtnText = saveSettingsBtn.textContent;
+      saveSettingsBtn.disabled = true;
+      saveSettingsBtn.textContent = "Saving...";
+      fetch("/customize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error(`Failed to save form: ${formId}`);
+        return response.json();
+      })
+      .then(data => {
+        saveSettingsBtn.textContent = "Saved! ✓";
+        saveSettingsBtn.style.backgroundColor = "#28a745"; 
+        setTimeout(() => {
+          saveSettingsBtn.disabled = false;
+          saveSettingsBtn.textContent = originalBtnText;
+          saveSettingsBtn.style.backgroundColor = ""; 
+        }, 2000);
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        alert("Something went wrong saving your settings.");
+        saveSettingsBtn.disabled = false;
+        saveSettingsBtn.textContent = originalBtnText;
+      });
     });
-    function handleFormSubmit(formId, successCallback) {
-        const form = document.getElementById(formId);
-        if (!form) return;
-        form.addEventListener("submit", function (event) {
-            event.preventDefault();
-            const formData = new FormData(form);
-            const payload = Object.fromEntries(formData.entries());
-            const saveSettingsBtn = form.querySelector(".save-settings-btn");
-            const originalBtnText = saveSettingsBtn.textContent;
-            saveSettingsBtn.disabled = true;
-            saveSettingsBtn.textContent = "Saving...";
-            fetch("/customize", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            })
-            .then(response => {
-                if (!response.ok) throw new Error(`Failed to save form: ${formId}`);
-                return response.json();
-            })
-            .then(data => {
-                saveSettingsBtn.textContent = "Saved! ✓";
-                saveSettingsBtn.style.backgroundColor = "#28a745"; 
-                setTimeout(() => {
-                    saveSettingsBtn.disabled = false;
-                    saveSettingsBtn.textContent = originalBtnText;
-                    saveSettingsBtn.style.backgroundColor = ""; 
-                }, 2000);
-                if (successCallback) successCallback(data);
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("Something went wrong saving your settings.");
-                
-                saveSettingsBtn.disabled = false;
-                saveSettingsBtn.textContent = originalBtnText;
-            });
-        });
-    }
+  }
 </script>

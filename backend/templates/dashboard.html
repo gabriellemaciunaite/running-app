@@ -58,15 +58,6 @@
             <button id="startRunBtn">Start Run</button>
         </div>
 
-        <div id="view-workout-plan" class="dashboard-view hidden">
-            <h1>🏃‍♂️ Your Workout Plan</h1>
-            <p>Here is your schedule for the week:</p>
-            <ul>
-            <li>Monday: 5k Easy Run</li>
-            <li>Wednesday: Interval Training</li>
-            </ul>
-        </div>
-
         <div id="view-leaderboard" class="dashboard-view hidden">
             <h1>🏆 Community Leaderboard</h1>
             <table>
@@ -74,6 +65,7 @@
             <tr><td>1</td><td>Alice</td><td>42.2 km</td></tr>
             </table>
         </div>
+        {% include 'partials/workout_plan.html' %}
 
         {% include 'partials/profile.html' %}
     </main>
@@ -248,7 +240,6 @@
     document.addEventListener("DOMContentLoaded", function () {
         const navItems = document.querySelectorAll(".nav-item");
         const views = document.querySelectorAll(".dashboard-view");
-
         navItems.forEach(item => {
             item.addEventListener("click", function () {
             navItems.forEach(btn => btn.classList.remove("active"));
