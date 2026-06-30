@@ -102,10 +102,10 @@ def customize():
         for field, cast_func in fields_to_update.items():
             if field in data:
                 val = data[field]
-                if cast_func in (int, float):
-                    setattr(current_user, field, cast_func(val) if val else None)
+                if val is None or (isinstance(val, str) and val.strip() == ""):
+                    setattr(current_user, field, None)
                 else:
-                    setattr(current_user, field, val)
+                    setattr(current_user, field, cast_func(val))
         current_user.customized = True
         db.session.commit()
         return jsonify({"status": "success", "message": "Profile updated"}), 200

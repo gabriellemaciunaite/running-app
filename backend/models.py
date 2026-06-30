@@ -11,7 +11,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     customized = db.Column(db.Boolean, default=False)
-    fitness_level = db.Column(db.Integer)
+    fitness_level = db.Column(db.String(256))
     age = db.Column(db.Integer)
     weight = db.Column(db.Float)
     height = db.Column(db.Float)
