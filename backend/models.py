@@ -30,7 +30,7 @@ class RunningPlan(db.Model):
 class WorkoutDay(db.Model):
     __tablename__ = "workout_day"
     id = db.Column(db.Integer, primary_key=True)
-    day_name = db.Column(db.Integer, nullable=False)
+    day_name = db.Column(db.String(255), nullable=False)
     plan_id = db.Column(db.Integer, db.ForeignKey("running_plan.id"), nullable=False)
     exercises = db.relationship("Exercise", backref="workout_day", cascade="all, delete-orphan")
 
