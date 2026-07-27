@@ -18,6 +18,9 @@ class User(UserMixin, db.Model):
     weekly_days = db.Column(db.String(256))
     target_goal = db.Column(db.String(256))
     plans = db.relationship("RunningPlan", backref="user", cascade="all, delete-orphan")
+    google_connected = db.Column(db.Boolean, default=False)
+    google_access_token = db.Column(db.Text)
+    google_token_expires_at = db.Column(db.Integer)
 
 class RunningPlan(db.Model):
     __tablename__ = "running_plan"

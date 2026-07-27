@@ -1,4 +1,5 @@
 import os
+import requests
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from dotenv import load_dotenv
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -7,6 +8,8 @@ from google import genai
 
 from extensions import db
 from models import User, RunningPlan, WorkoutDay, Exercise, OpenAIPlanSchema
+
+from authlib.integrations.flask_client import OAuth
 
 load_dotenv()
 
@@ -27,6 +30,20 @@ with app.app_context():
     db.create_all()
 
 gemini_client = genai.Client()
+
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
+    access_token_url='https://oauth2.googleapis.com/token',
+    api_base_url='https://www.googleapis.com/oauth2/v1/',
+    jwks_uri='https://www.googleapis.com/oauth2/v3/certs',
+    client_kwargs={
+        'scope': 'openid email profile https://www.googleapis.com/auth/fitness.activity.read'
+    }
+)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -173,7 +190,56 @@ def toggle_exercise(exercise_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+@app.route('/connect-google')
+@login_required
+def connect_google():
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri, access_type='offline', prompt='consent')
+
+@app.route('/google-callback')
+@login_required
+def google_callback():
+    token = google.authorize_access_token()
+    current_user.google_connected = True
+    current_user.google_access_token = token.get('access_token')
+    if token.get('refresh_token'):
+        current_user.google_refresh_token = token.get('refresh_token')
+    expires_at = token.get('expires_at')
+    if expires_at:
+        current_user.google_token_expires_at = token.get('expires_at')
+    db.session.commit()
+    return redirect(url_for('dashboard'))
     
+@app.route('/fetch-runs')
+@login_required
+def fetch_runs():
+    if not current_user.google_connected or not current_user.google_access_token:
+        return redirect(url_for('connect_google'))
+    url = "https://www.googleapis.com/fitness/v1/users/me/sessions?activityType=8"
+    headers = {"Authorization": f"Bearer {current_user.google_access_token}"}
+    response = requests.get(url, headers=headers)
+    if response.status_code == 401:
+        return redirect(url_for('connect_google'))
+    if not response.ok:
+        return jsonify({"error": f"Failed to fetch runs from Google Fit: {response.text}"}), response.status_code
+    data = response.json()
+    sessions = data.get("session", [])
+    runs = []
+    for session in sessions:
+        start_ms = int(session.get("startTimeMillis", 0))
+        end_ms = int(session.get("endTimeMillis", 0))
+        duration_minutes = round((end_ms - start_ms) / (1000 * 60), 2)
+        runs.append({
+            "id": session.get("id"),
+            "name": session.get("name", "Untitled Run"),
+            "description": session.get("description", ""),
+            "duration_minutes": duration_minutes,
+            "start_time_ms": start_ms,
+            "end_time_ms": end_ms
+        })
+    return jsonify({"total_runs": len(runs), "runs": runs})
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
