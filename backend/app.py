@@ -41,7 +41,7 @@ google = oauth.register(
     api_base_url='https://www.googleapis.com/oauth2/v1/',
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs',
     client_kwargs={
-        'scope': 'openid email profile https://www.googleapis.com/auth/fitness.activity.read'
+        'scope': 'openid email profile https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.location.read'
     }
 )
 
@@ -211,12 +211,51 @@ def google_callback():
     db.session.commit()
     return redirect(url_for('dashboard'))
     
+def get_run_stats(start_ms, end_ms, headers):
+    aggregate_url = "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate"
+    payload = {
+        "aggregateBy": [
+            {"dataTypeName": "com.google.distance.delta"},
+            {"dataTypeName": "com.google.calories.expended"},
+            {"dataTypeName": "com.google.step_count.delta"}
+        ],
+        "startTimeMillis": start_ms,
+        "endTimeMillis": end_ms
+    }
+    res = requests.post(aggregate_url, json=payload, headers=headers)
+    stats = {
+        "distance_meters": 0.0, "calories_burned": 0, "steps": 0
+    }
+    if not res.ok:
+        return stats
+    data = res.json()
+    datasets = data.get("dataset", [])
+    for bucket in data.get("bucket", []):
+        datasets.extend(bucket.get("dataset", []))
+    for dataset in datasets:
+        for point in dataset.get("point", []):
+            data_type = point.get("dataTypeName", "")
+            value_list = point.get("value", [])
+            if not value_list:
+                continue
+            val_obj = value_list[0]
+            num_val = val_obj.get("fpVal", val_obj.get("intVal", 0))
+            if "distance" in data_type:
+                # Keep exact unrounded meters internally
+                stats["distance_meters"] += float(num_val)
+            elif "calories" in data_type:
+                stats["calories_burned"] += round(num_val)
+            elif "step" in data_type:
+                stats["steps"] += int(num_val)
+    return stats
+
+
 @app.route('/fetch-runs')
 @login_required
 def fetch_runs():
     if not current_user.google_connected or not current_user.google_access_token:
         return redirect(url_for('connect_google'))
-    url = "https://www.googleapis.com/fitness/v1/users/me/sessions?activityType=8"
+    url = "https://www.googleapis.com/fitness/v1/users/me/sessions"
     headers = {"Authorization": f"Bearer {current_user.google_access_token}"}
     response = requests.get(url, headers=headers)
     if response.status_code == 401:
@@ -225,19 +264,26 @@ def fetch_runs():
         return jsonify({"error": f"Failed to fetch runs from Google Fit: {response.text}"}), response.status_code
     data = response.json()
     sessions = data.get("session", [])
+    RUNNING_ACTIVITY_IDS = [8, 56, 57, 58]
     runs = []
     for session in sessions:
-        start_ms = int(session.get("startTimeMillis", 0))
-        end_ms = int(session.get("endTimeMillis", 0))
-        duration_minutes = round((end_ms - start_ms) / (1000 * 60), 2)
-        runs.append({
-            "id": session.get("id"),
-            "name": session.get("name", "Untitled Run"),
-            "description": session.get("description", ""),
-            "duration_minutes": duration_minutes,
-            "start_time_ms": start_ms,
-            "end_time_ms": end_ms
-        })
+        if session.get("activityType") in RUNNING_ACTIVITY_IDS:
+            start_ms = int(session.get("startTimeMillis", 0))
+            end_ms = int(session.get("endTimeMillis", 0))
+            duration_seconds = (end_ms - start_ms) / 1000.0
+            stats = get_run_stats(start_ms, end_ms, headers)
+            distance_km = stats["distance_meters"] / 1000.0
+            runs.append({
+                "id": session.get("id"),
+                "name": session.get("name", "Untitled Run"),
+                "description": session.get("description", ""),
+                "duration_seconds": duration_seconds,
+                "distance_km": distance_km,
+                "calories_burned": stats["calories_burned"],
+                "steps": stats["steps"],
+                "start_time_ms": start_ms,
+                "end_time_ms": end_ms
+            })
     return jsonify({"total_runs": len(runs), "runs": runs})
 
 

@@ -12,8 +12,8 @@
         <!-- TRAINING SECTION -->
         <div class="nav-section">
           <span class="section-header">TRAINING</span>
-          <button class="nav-item active" data-target="live-session">
-            <span class="icon">⏱</span> Live Session
+          <button class="nav-item active" data-target="fit-statistics">
+            <span class="icon">⏱</span> Fit Statistics
           </button>
           <button class="nav-item" data-target="workout-plan">
             <span class="icon">🏃‍♂️</span> Workout Plan
@@ -49,14 +49,7 @@
 
     <!-- MAIN MAIN CONTENT DISPLAY AREA -->
     <main class="content-area">
-        <div id="view-live-session" class="dashboard-view">
-            <h1>⏱ Live Session Tracker</h1>
-            <div class="metrics-grid">
-            <div class="card"><h3>Current Pace</h3><p>0:00 /km</p></div>
-            <div class="card"><h3>Distance</h3><p>0.00 km</p></div>
-            </div>
-            <button id="startRunBtn">Start Run</button>
-        </div>
+        {% include 'partials/view.html' %}
 
         <div id="view-leaderboard" class="dashboard-view hidden">
             <h1>🏆 Community Leaderboard</h1>

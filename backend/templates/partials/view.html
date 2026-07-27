@@ -1,0 +1,263 @@
+<div id="view-fit-statistics" class="dashboard-view">
+
+  <div class="profile-header-card workout-header">
+    <div class="profile-meta">
+      <h2>Google Fit Statistics</h2>
+      <p class="location-text">
+        {% if current_user.google_connected %}
+          Real-time workout metrics synced directly from your Google Fit account.
+        {% else %}
+          Connect your Google account to view distance, calories burned, and step totals.
+        {% endif %}
+      </p>
+    </div>
+
+    {% if current_user.google_connected %}
+      <button id="syncFitBtn" class="save-settings-btn" onclick="fetchRunStats()">
+        Sync Now
+      </button>
+    {% else %}
+      <a href="{{ url_for('connect_google') }}" class="save-settings-btn" style="text-decoration: none; display: inline-block;">
+        Connect Google Fit
+      </a>
+    {% endif %}
+  </div>
+
+  {% if current_user.google_connected %}
+    <!-- Loading Spinner -->
+    <div id="fit-loading-spinner" class="card" style="text-align: center; padding: 40px; margin-bottom: 24px;">
+      <p style="font-weight: 600; color: #0066cc; margin: 0;">⚙️ Fetching workout statistics... Please wait.</p>
+    </div>
+
+    <!-- Main Content Workspace -->
+    <div id="fit-stats-workspace" class="hidden">
+      <div class="settings-tables-container workout-days-grid">
+        
+        <!-- Summary Card -->
+        <div class="settings-panel workout-day-card" style="flex: 1; min-width: 100%;">
+          <div class="day-card-header">
+            <h3>Overview</h3>
+          </div>
+          <div class="stats-summary-row">
+            <div class="stat-summary-box">
+              <span class="stat-summary-label">Total Runs</span>
+              <strong id="summary-total-runs" class="stat-summary-value">0</strong>
+            </div>
+            <div class="stat-summary-box">
+              <span class="stat-summary-label">Total Distance</span>
+              <strong id="summary-total-distance" class="stat-summary-value">0.00 km</strong>
+            </div>
+            <div class="stat-summary-box">
+              <span class="stat-summary-label">Total Calories</span>
+              <strong id="summary-total-calories" class="stat-summary-value">0 kcal</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Runs Card -->
+        <div class="settings-panel workout-day-card" style="flex: 1; min-width: 100%; margin-top: 20px;">
+          <div class="day-card-header">
+            <h3>Recent Runs (Past 7 Days)</h3>
+          </div>
+          <ul id="recent-runs-list" class="exercise-list">
+            <!-- Dynamically populated via JS -->
+          </ul>
+        </div>
+
+        <!-- Older Runs Expandable Section -->
+        <div id="older-runs-wrapper" class="settings-panel workout-day-card hidden" style="flex: 1; min-width: 100%; margin-top: 20px;">
+          <details class="older-runs-details">
+            <summary class="older-runs-summary">
+              <span id="older-runs-count-label" style="font-weight: 600; color: #495057;">Older Activities</span>
+            </summary>
+            <ul id="older-runs-list" class="exercise-list" style="margin-top: 12px;">
+              <!-- Dynamically populated via JS -->
+            </ul>
+          </details>
+        </div>
+
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+
+<style>
+/* Summary card layout */
+.stats-summary-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.stat-summary-box {
+  flex: 1;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid #f1f3f5;
+}
+
+.stat-summary-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.stat-summary-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+/* Timestamp badge */
+.exercise-timestamp {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0066cc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  display: block;
+}
+
+/* Expandable older runs styling */
+.older-runs-details summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 15px;
+  user-select: none;
+}
+
+.older-runs-details summary:hover span {
+  color: #0066cc !important;
+}
+</style>
+
+{% if current_user.google_connected %}
+<script>
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}m ${secs}s`;
+}
+
+function formatTimestamp(ms) {
+  if (!ms) return "";
+  const date = new Date(ms);
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function createRunListItem(run) {
+  const li = document.createElement('li');
+  li.className = 'exercise-item-row';
+  li.innerHTML = `
+    <div class="exercise-details">
+      <span class="exercise-timestamp">📅 ${formatTimestamp(run.start_time_ms)}</span>
+      <span class="exercise-name">${run.name}</span>
+      <span class="exercise-metrics-badge">
+        🏃‍♂️ ${run.distance_km.toFixed(2)} km &nbsp;•&nbsp; ⏱️ ${formatDuration(run.duration_seconds)} &nbsp;•&nbsp; 🔥 ${run.calories_burned} kcal &nbsp;•&nbsp; 👟 ${run.steps.toLocaleString()} steps
+      </span>
+      ${run.description ? `<p class="exercise-desc-text">${run.description}</p>` : ''}
+    </div>
+  `;
+  return li;
+}
+
+function fetchRunStats() {
+  const spinner = document.getElementById("fit-loading-spinner");
+  const workspace = document.getElementById("fit-stats-workspace");
+  const syncBtn = document.getElementById("syncFitBtn");
+
+  if (spinner) spinner.classList.remove("hidden");
+  if (workspace) workspace.classList.add("hidden");
+  if (syncBtn) syncBtn.disabled = true;
+
+  fetch("{{ url_for('fetch_runs') }}")
+    .then(response => {
+      if (response.redirected) {
+        window.location.href = response.url;
+        return;
+      }
+      if (!response.ok) throw new Error("Failed to fetch Google Fit runs.");
+      return response.json();
+    })
+    .then(data => {
+      const runs = data.runs || [];
+      let totalKm = 0;
+      let totalCal = 0;
+
+      const recentList = document.getElementById('recent-runs-list');
+      const olderList = document.getElementById('older-runs-list');
+      const olderWrapper = document.getElementById('older-runs-wrapper');
+      const olderCountLabel = document.getElementById('older-runs-count-label');
+
+      recentList.innerHTML = '';
+      olderList.innerHTML = '';
+
+      const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+
+      let recentCount = 0;
+      let olderCount = 0;
+
+      runs.forEach(run => {
+        totalKm += run.distance_km || 0;
+        totalCal += run.calories_burned || 0;
+
+        const runTime = run.start_time_ms || 0;
+        const isOlderThanWeek = (now - runTime) > ONE_WEEK_MS;
+
+        const item = createRunListItem(run);
+
+        if (isOlderThanWeek) {
+          olderList.appendChild(item);
+          olderCount++;
+        } else {
+          recentList.appendChild(item);
+          recentCount++;
+        }
+      });
+
+      document.getElementById('summary-total-runs').textContent = data.total_runs || 0;
+      document.getElementById('summary-total-distance').textContent = `${totalKm.toFixed(2)} km`;
+      document.getElementById('summary-total-calories').textContent = `${totalCal} kcal`;
+
+      if (recentCount === 0) {
+        recentList.innerHTML = '<li class="exercise-item-row"><span class="exercise-desc-text">No runs recorded in the past 7 days.</span></li>';
+      }
+
+      if (olderCount > 0) {
+        olderCountLabel.textContent = `📁 Older Activities (${olderCount})`;
+        olderWrapper.classList.remove('hidden');
+      } else {
+        olderWrapper.classList.add('hidden');
+      }
+
+      if (spinner) spinner.classList.add("hidden");
+      if (workspace) workspace.classList.remove("hidden");
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      if (spinner) spinner.classList.add("hidden");
+      if (workspace) workspace.classList.remove("hidden");
+    })
+    .finally(() => {
+      if (syncBtn) syncBtn.disabled = false;
+    });
+}
+
+// Initial fetch on page load
+document.addEventListener("DOMContentLoaded", fetchRunStats);
+</script>
+{% endif %}
