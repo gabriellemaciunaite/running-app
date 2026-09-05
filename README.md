@@ -22,7 +22,7 @@ A running app built with **Flask**, **Redis**, and **Celery**. Features automate
 git clone https://github.com/gabriellemaciunaite/running-app.git
 cd running-app/backend
 ```
-### Create and activate virtual environment:
+### Create and activate venv:
 ```
 python3 -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ```
 
-## 2. Configure Environment Variables
+## 2. Configure environment variables:
 
 Create a `.env` file in the `backend/` directory:
 
@@ -43,6 +43,11 @@ FLASK_APP=app.py
 FLASK_DEBUG=True
 SECRET_KEY=your_secret_key
 DATABASE_URL=your_database_url
+GEMINI_API_KEY=your_gemini_api_key
+GOOGLE_CLIENT_ID=your_google_fit_client_id
+GOOGLE_CLIENT_SECRET=your_google_fit_client_secret
+FERNET_ENCRYPTION_KEY=your_32-byte_b65_string
+REDIS_URL=your_redis_url
 
 ```
 
@@ -59,15 +64,15 @@ sudo service redis-server start
 
 ```
 
-#### Terminal 2: Start Celery Beat (Google Fit Sync)
+#### Terminal 2: Start Celery Beat & Worker (for the Google Fit Sync)
 
 ```bash
-# Start Celery Beat Scheduler
-celery -A app.celery beat --loglevel=info
+# Start Celery Beat Scheduler & Worker
+celery -A app.celery worker -B --loglevel=info
 
 ```
 
-#### Terminal 3: Start Flask Server
+#### Terminal 3: Start the Flask Server
 
 ```bash
 flask run
