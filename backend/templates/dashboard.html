@@ -42,7 +42,7 @@
         <div class="user-avatar">👤</div>
         <div class="user-info">
           <span class="user-name">{{ current_user.username }}</span>
-          <span class="user-points">{{ current_user.runs | map(attribute='distance_meters', default=0) | sum | round | int}} pts</span>
+          <span class="user-points">--</span>
         </div>
       </footer>
     </aside>
@@ -226,7 +226,7 @@
 
 <script>
     const csrfToken = "{{ csrf_token() }}";
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", async function () {
         const navItems = document.querySelectorAll(".nav-item");
         const views = document.querySelectorAll(".dashboard-view");
         navItems.forEach(item => {
@@ -239,5 +239,16 @@
                 if (targetView) targetView.classList.remove("hidden");
             });
         });
+        const pointsSpan = document.querySelector("span.user-points");
+        try {
+            const response = await fetch (`/get-rank/{{ current_user.id }}`, {headers: { 'X-CSRFToken': csrfToken }});
+            const data = await response.json();
+            let distance = "{{ current_user.runs | map(attribute='distance_meters', default=0) | sum | round | int}}";
+            pointsSpan.textContent = data.rank !== null ? ` Rank #${data.rank} | ${distance} pts` : "Unranked | 0 pts";
+        } catch (error) {
+            console.error("Failed to fetch global rank:", error);
+            pointsSpan.textContent = "—";
+        }
     });
+    
 </script>

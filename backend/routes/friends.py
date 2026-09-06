@@ -9,6 +9,19 @@ friends_bp = Blueprint("friends", __name__, url_prefix="/api")
 @friends_bp.route("/leaderboard-data")
 @login_required
 def get_leaderboard_data():
+    """Retrieve weekly distance leaderboard for the current user.
+    
+    Queries the sorted set to return a set of data for each friend of the current user, such
+    as weekly_km (using zscore), pr_5k, streak, rank (using zrevrank), and more. 
+
+    Arguments:
+        username (str): Unique identifier for the user (alphanumeric, 3-20 characters).
+        password (str): Plaintext password (non-alphanumeric, >8 characters, mixed case).
+
+    Returns:
+        Response: redirects to dashboard view upon success, otherwise render login.html template.
+
+    """
     accepted_friendships = db.session.execute(
         db.select(Friendship).where(
             (Friendship.sender_id == current_user.id) | (Friendship.receiver_id == current_user.id),
@@ -22,17 +35,21 @@ def get_leaderboard_data():
 
     year, week, _ = datetime.now(timezone.utc).isocalendar()
     redis_key = f"leaderboard:distance:{year}-W{week}"
+    
 
     user_pool = db.session.execute(db.select(User).where(User.id.in_(friend_ids))).scalars().all()
     pipe = redis_client.pipeline()
     for user in user_pool:
+        pipe.zrevrank(redis_key, str(user.id))
         pipe.zscore(redis_key, str(user.id))
-    scores = pipe.execute()
+    pipeline_results = pipe.execute()
+    results = [pipeline_results[i : i + 2] for i in range(0, len(pipeline_results), 2)]
 
     friends_data = [
         {
             "id": user.id,
             "username": user.username,
+            "rank": raw_rank + 1 if raw_rank is not None else None,
             "streak": user.login_streak or 0,
             "weekly_km": round(float(score), 2) if score is not None else 0.0,
             "is_me": user.id == current_user.id,
@@ -40,9 +57,8 @@ def get_leaderboard_data():
             "pr_10k": user.pr_10k or 0.0,
             "pr_marathon": user.pr_marathon or 0.0,
         }
-        for user, score in zip(user_pool, scores)
+        for user, (raw_rank, score) in zip(user_pool, results)
     ]
-    friends_data.sort(key=lambda x: x["weekly_km"], reverse=True)
 
     pending_requests = db.session.execute(
         db.select(Friendship).where(Friendship.receiver_id == current_user.id, Friendship.status == "pending")
@@ -84,6 +100,8 @@ def send_friend_request():
 def respond_friend_request(request_id):
     data = request.get_json() or {}
     action = data.get("action")
+    if action not in ("accept", "decline"):
+        return jsonify({"error": "Invalid action. Must be 'accept' or 'decline'"}), 400
     friend_req = db.session.execute(
         db.select(Friendship).where(Friendship.id == request_id, Friendship.receiver_id == current_user.id)
     ).scalar_one_or_none()
@@ -92,13 +110,12 @@ def respond_friend_request(request_id):
         return jsonify({"error": "Friend request not found"}), 404
     if action == "accept":
         friend_req.status = "accepted"
+        msg = "Request accepted"
     elif action == "decline":
         db.session.delete(friend_req)
-    else:
-        return jsonify({"error": "Invalid action. Must be 'accept' or 'decline'"}), 400
-
+        msg = "Request declined"
     db.session.commit()
-    return jsonify({"message": f"Request {action}ed successfully"}), 200
+    return jsonify({"message": msg}), 200
 
 @friends_bp.route("/friends/remove/<int:friend_id>", methods=["DELETE"])
 @login_required

@@ -190,17 +190,17 @@ function renderFriendsManager() {
 
   leaderboardCache.forEach(friend => {
     if (friend.is_me) return;
-
-    const totalDistance = {{ current_user.runs | map(attribute='distance_meters', default=0) | sum | round | int}};
     const li = document.createElement('li');
     li.className = 'exercise-item-row';
     li.style.justifyContent = 'space-between';
     li.style.alignItems = 'center';
+    const meters = (friend.weekly_km || 0) * 1000;
+    const rank = friend.rank ? `Rank #${friend.rank}` : "Unranked";
     li.innerHTML = `
       <div class="exercise-details">
         <span class="exercise-name">${friend.username}</span>
         <span class="exercise-metrics-badge">
-          🔥 ${friend.streak} Day Streak &nbsp;•&nbsp; 🏃‍♂️ ${friend.weekly_km.toFixed(2)} km this week &nbsp;•&nbsp; 🪙 ${totalDistance} pts
+          🪙 ${meters} pts | ${rank} 
         </span>
       </div>
       <button onclick="handleRemoveFriend(${friend.id})" style="background: none; border: none; color: #e03131; cursor: pointer; font-size: 13px; font-weight: 600;">
