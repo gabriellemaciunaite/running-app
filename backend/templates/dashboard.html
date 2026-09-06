@@ -42,7 +42,7 @@
         <div class="user-avatar">👤</div>
         <div class="user-info">
           <span class="user-name">{{ current_user.username }}</span>
-          <span class="user-points">0 pts</span>
+          <span class="user-points">{{ current_user.runs | map(attribute='distance_meters', default=0) | sum | round | int}} pts</span>
         </div>
       </footer>
     </aside>
@@ -51,13 +51,8 @@
     <main class="content-area">
         {% include 'partials/view.html' %}
 
-        <div id="view-leaderboard" class="dashboard-view hidden">
-            <h1>🏆 Community Leaderboard</h1>
-            <table>
-            <tr><th>Rank</th><th>Runner</th><th>Distance</th></tr>
-            <tr><td>1</td><td>Alice</td><td>42.2 km</td></tr>
-            </table>
-        </div>
+        {% include 'partials/leaderboard.html' %}
+
         {% include 'partials/workout_plan.html' %}
 
         {% include 'partials/profile.html' %}
@@ -230,19 +225,18 @@
 
 
 <script>
+    const csrfToken = "{{ csrf_token() }}";
     document.addEventListener("DOMContentLoaded", function () {
         const navItems = document.querySelectorAll(".nav-item");
         const views = document.querySelectorAll(".dashboard-view");
         navItems.forEach(item => {
             item.addEventListener("click", function () {
-            navItems.forEach(btn => btn.classList.remove("active"));
-            this.classList.add("active");
-            views.forEach(view => view.classList.add("hidden"));
-            const target = this.getAttribute("data-target");
-            const targetView = document.getElementById(`view-${target}`);
-            if (targetView) {
-                targetView.classList.remove("hidden");
-            }
+                navItems.forEach(btn => btn.classList.remove("active"));
+                this.classList.add("active");
+                views.forEach(view => view.classList.add("hidden"));
+                const target = this.getAttribute("data-target");
+                const targetView = document.getElementById(`view-${target}`);
+                if (targetView) targetView.classList.remove("hidden");
             });
         });
     });

@@ -60,6 +60,7 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    const csrfToken = "{{ csrf_token() }}";
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -70,24 +71,14 @@
 
     function updateForm() {
       document.querySelectorAll(".form-step").forEach((step, index) => {
-      if (index === currentStep - 1) {
-        step.classList.remove("hidden");
-      } else {
-        step.classList.add("hidden");
-      }
+        if (index === currentStep - 1) step.classList.remove("hidden");
+        else step.classList.add("hidden");
       });
       progressBar.style.width = `${(currentStep / totalSteps) * 100}%`;
-
-      if (currentStep === 1) {
-        prevBtn.style.visibility = "hidden";
-      } else {
-        prevBtn.style.visibility = "visible";
-      }
-      if (currentStep === totalSteps) {
-        nextBtn.textContent = "Submit Profile";
-      } else {
-        nextBtn.textContent = "Continue";
-      }
+      if (currentStep === 1) prevBtn.style.visibility = "hidden";
+      else prevBtn.style.visibility = "visible";
+      if (currentStep === totalSteps) nextBtn.textContent = "Submit Profile";
+      else nextBtn.textContent = "Continue";
     }
 
     nextBtn.addEventListener("click", function () {
@@ -105,9 +96,8 @@
       if (currentStep < totalSteps) {
         currentStep++;
         updateForm();
-      } else {
-        submitData();
       }
+      else submitData();
     });
 
     prevBtn.addEventListener("click", function () {
@@ -126,7 +116,7 @@
 
       fetch("/customize", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: {"Content-Type": "application/json", 'X-CSRFToken': csrfToken},
         body: JSON.stringify(payload)
       })
       .then(response => {
@@ -147,36 +137,41 @@
 </script>
 
 <style>
-    .form-step.hidden {
+  .form-step.hidden {
     display: none;
-    }
+  }
 
-    .onboarding-container {
+  .onboarding-container {
     max-w: 400px;
     margin: 40px auto;
     font-family: sans-serif;
-    }
-    .progress-container {
+  }
+  
+  .progress-container {
     width: 100%;
     background-color: #f0f0f0;
     height: 8px;
     margin-bottom: 20px;
-    }
-    #progress-bar {
+  }
+
+  #progress-bar {
     width: 25%;
     height: 100%;
     background-color: #0066cc;
-    }
-    .input-group {
+  }
+
+  .input-group {
     margin-bottom: 15px;
-    }
-    .input-group label {
+  }
+
+  .input-group label {
     display: block;
     margin-bottom: 5px;
-    }
-    .button-container {
+  }
+
+  .button-container {
     display: flex;
     justify-content: space-between;
     margin-top: 20px;
-    }
+  }
 </style>

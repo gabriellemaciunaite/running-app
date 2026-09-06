@@ -1,3 +1,4 @@
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <div id="view-profile" class="dashboard-view hidden">
   <h1>Profile & Settings</h1>
 
@@ -5,24 +6,8 @@
     <div class="profile-avatar-large">👤</div>
     <div class="profile-meta">
       <h2>{{ current_user.username }}</h2>
-      <p class="location-text">📍 Brighton and Hove, UK</p>
     </div>
   </div>
-
-  <div class="metrics-grid inline-stats">
-    <div class="card stat-card">
-        <h3>Total Runs</h3>
-        <p class="stat-value">--</p>
-    </div>
-    <div class="card stat-card">
-        <h3>KM Logged</h3>
-        <p class="stat-value">--.- km</p>
-    </div>
-    <div class="card stat-card">
-        <h3>5K PB</h3>
-        <p class="stat-value">--:--</p>
-    </div>
-</div>
 
   <div class="settings-tables-container">
     
@@ -212,38 +197,6 @@
     .save-settings-btn:hover {
     background-color: #0052a3;
     }
-
-    .metrics-grid.inline-stats {
-    display: flex;
-    flex-direction: row; /* Forces horizontal alignment */
-    gap: 20px;           /* Spacing between the cards */
-    width: 100%;         /* Uses full width of content area */
-    margin-bottom: 24px;
-    }
-
-    .metrics-grid.inline-stats .stat-card {
-    flex: 1;             /* Distributes width evenly across all 3 cards */
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    border: 1px solid #e9ecef;
-    box-sizing: border-box;
-    }
-
-    .metrics-grid.inline-stats .stat-card h3 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    }
-
-    .metrics-grid.inline-stats .stat-card p {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-    color: #0066cc;
-    }
 </style>
 
 <script>
@@ -264,7 +217,7 @@
       saveSettingsBtn.textContent = "Saving...";
       fetch("/customize", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken },
         body: JSON.stringify(payload)
       })
       .then(response => {

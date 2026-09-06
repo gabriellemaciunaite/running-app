@@ -4,6 +4,7 @@
 <main style="padding: 40px; text-align: center;">
     <h2>Register Form</h2>
     <form action="/register" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div>
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" required>
@@ -20,5 +21,14 @@
         <br>
         <button type="submit">Register</button>
     </form>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
 </main>
 {% endblock %}

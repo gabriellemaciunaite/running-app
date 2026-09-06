@@ -1,0 +1,305 @@
+<div id="view-leaderboard" class="dashboard-view hidden">
+
+  <!-- Header Card -->
+  <div class="profile-header-card workout-header">
+    <div class="profile-meta">
+      <h2>Community Leaderboard</h2>
+      <p class="location-text">Compare weekly mileage and Personal Records with your training partners.</p>
+    </div>
+    <div class="streak-badge-header">
+      🔥 <strong id="my-streak-count">{{ current_user.login_streak or 0 }}</strong> Day Streak
+    </div>
+  </div>
+
+  <!-- Collapsible Pending Requests Section (Hidden by Default) -->
+  <div id="pending-requests-wrapper" class="settings-panel workout-day-card hidden" style="flex: 1; min-width: 100%; margin-bottom: 20px; border-left: 4px solid #0066cc;">
+    <div class="day-card-header">
+      <h3 style="color: #0066cc;">📩 Pending Friend Requests</h3>
+    </div>
+    <ul id="pending-requests-list" class="exercise-list" style="margin-top: 12px;">
+      <!-- Dynamically Populated -->
+    </ul>
+  </div>
+
+  <!-- Collapsible Friends Management -->
+  <div class="settings-panel workout-day-card" style="flex: 1; min-width: 100%; margin-bottom: 20px;">
+    <details class="older-runs-details" open>
+      <summary class="older-runs-summary" style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 600; color: #495057;">👥 Manage Friends</span>
+      </summary>
+
+      <div class="add-friend-bar" style="margin-top: 16px; display: flex; gap: 8px;">
+        <input type="text" id="add-friend-input" class="form-control" placeholder="Enter friend's username..." style="max-width: 300px; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+        <button onclick="handleAddFriend()" class="save-settings-btn">Send Request</button>
+      </div>
+
+      <ul id="friends-manage-list" class="exercise-list" style="margin-top: 16px;">
+        <!-- Dynamically Populated -->
+      </ul>
+    </details>
+  </div>
+
+  <!-- Leaderboards Grid -->
+  <div class="settings-tables-container workout-days-grid" style="display: flex; gap: 20px; flex-wrap: wrap;">
+    
+    <!-- Board 1: Weekly Distance -->
+    <div class="settings-panel workout-day-card" style="flex: 1; min-width: 340px;">
+      <div class="day-card-header">
+        <h3>🏃‍♂️ Weekly Distance (Past 7 Days)</h3>
+      </div>
+      <ul id="board-distance-list" class="exercise-list">
+        <!-- Dynamically Populated -->
+      </ul>
+    </div>
+
+    <!-- Board 2: Personal Records -->
+    <div class="settings-panel workout-day-card" style="flex: 1; min-width: 340px;">
+      <div class="day-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>🏆 PR Leaderboard</h3>
+        <select id="pr-category-select" onchange="renderPRBoard()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ced4da; font-size: 13px;">
+          <option value="5k">5K</option>
+          <option value="10k">10K</option>
+          <option value="marathon">Marathon</option>
+        </select>
+      </div>
+      <ul id="board-pr-list" class="exercise-list">
+        <!-- Dynamically Populated -->
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+
+<style>
+.streak-badge-header {
+  background-color: #fff0f6;
+  color: #d63384;
+  border: 1px solid #fcc2d7;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.leaderboard-rank {
+  font-weight: 700;
+  font-size: 16px;
+  width: 28px;
+  text-align: center;
+  margin-right: 12px;
+  color: #495057;
+}
+
+.rank-1 { color: #f59f00; }
+.rank-2 { color: #868e96; }
+.rank-3 { color: #d9480f; }
+
+.my-row-highlight {
+  background-color: #e7f5ff;
+  border-radius: 6px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.btn-accept {
+  background-color: #2b8a3e;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btn-decline {
+  background-color: #e03131;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+</style>
+
+<script>
+let leaderboardCache = [];
+
+function formatTime(seconds) {
+  if (!seconds || seconds <= 0) return "--:--";
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+  return `${mins}m ${secs}s`;
+}
+
+function fetchLeaderboardData() {
+  fetch('/api/leaderboard-data', {headers: { 'X-CSRFToken': csrfToken }})
+    .then(res => res.json())
+    .then(data => {
+      leaderboardCache = data.friends || [];
+      renderPendingRequests(data.incoming_requests || []);
+      renderFriendsManager();
+      renderDistanceBoard();
+      renderPRBoard();
+
+      const me = leaderboardCache.find(u => u.is_me);
+      if (me) document.getElementById('my-streak-count').textContent = me.streak;
+    })
+    .catch(err => console.error("Error loading leaderboard:", err));
+}
+
+function renderPendingRequests(requests) {
+  const wrapper = document.getElementById('pending-requests-wrapper');
+  const container = document.getElementById('pending-requests-list');
+  container.innerHTML = '';
+
+  if (requests.length === 0) {
+    wrapper.classList.add('hidden');
+    return;
+  }
+
+  wrapper.classList.remove('hidden');
+
+  requests.forEach(req => {
+    const li = document.createElement('li');
+    li.className = 'exercise-item-row';
+    li.style.justifyContent = 'space-between';
+    li.style.alignItems = 'center';
+    li.innerHTML = `
+      <div class="exercise-details">
+        <span class="exercise-name">${req.sender_username}</span>
+        <span class="exercise-metrics-badge">wants to connect with you</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button onclick="handleRespondRequest(${req.request_id}, 'accept')" class="btn-accept">Accept</button>
+        <button onclick="handleRespondRequest(${req.request_id}, 'decline')" class="btn-decline">Decline</button>
+      </div>
+    `;
+    container.appendChild(li);
+  });
+}
+
+function renderFriendsManager() {
+  const container = document.getElementById('friends-manage-list');
+  container.innerHTML = '';
+
+  leaderboardCache.forEach(friend => {
+    if (friend.is_me) return;
+
+    const totalDistance = {{ current_user.runs | map(attribute='distance_meters', default=0) | sum | round | int}};
+    const li = document.createElement('li');
+    li.className = 'exercise-item-row';
+    li.style.justifyContent = 'space-between';
+    li.style.alignItems = 'center';
+    li.innerHTML = `
+      <div class="exercise-details">
+        <span class="exercise-name">${friend.username}</span>
+        <span class="exercise-metrics-badge">
+          🔥 ${friend.streak} Day Streak &nbsp;•&nbsp; 🏃‍♂️ ${friend.weekly_km.toFixed(2)} km this week &nbsp;•&nbsp; 🪙 ${totalDistance} pts
+        </span>
+      </div>
+      <button onclick="handleRemoveFriend(${friend.id})" style="background: none; border: none; color: #e03131; cursor: pointer; font-size: 13px; font-weight: 600;">
+        Remove
+      </button>
+    `;
+    container.appendChild(li);
+  });
+
+  if (container.children.length === 0) {
+    container.innerHTML = '<li class="exercise-item-row"><span class="exercise-desc-text">No friends added yet.</span></li>';
+  }
+}
+
+function renderDistanceBoard() {
+  const container = document.getElementById('board-distance-list');
+  container.innerHTML = '';
+
+  const sorted = [...leaderboardCache].sort((a, b) => b.weekly_km - a.weekly_km);
+
+  sorted.forEach((user, index) => {
+    const rank = index + 1;
+    const li = document.createElement('li');
+    li.className = `exercise-item-row ${user.is_me ? 'my-row-highlight' : ''}`;
+    li.innerHTML = `
+      <span class="leaderboard-rank rank-${rank}">${rank}</span>
+      <div class="exercise-details">
+        <span class="exercise-name">${user.username} ${user.is_me ? '(You)' : ''}</span>
+        <span class="exercise-metrics-badge">🔥 ${user.streak} day streak</span>
+      </div>
+      <strong style="font-size: 15px; color: #0066cc;">${user.weekly_km.toFixed(2)} km</strong>
+    `;
+    container.appendChild(li);
+  });
+}
+
+function renderPRBoard() {
+  const category = document.getElementById('pr-category-select').value;
+  const prKey = `pr_${category}`;
+  const container = document.getElementById('board-pr-list');
+  container.innerHTML = '';
+
+  const validUsers = leaderboardCache.filter(u => u[prKey] && u[prKey] > 0);
+  validUsers.sort((a, b) => a[prKey] - b[prKey]);
+
+  validUsers.forEach((user, index) => {
+    const rank = index + 1;
+    const li = document.createElement('li');
+    li.className = `exercise-item-row ${user.is_me ? 'my-row-highlight' : ''}`;
+    li.innerHTML = `
+      <span class="leaderboard-rank rank-${rank}">${rank}</span>
+      <div class="exercise-details">
+        <span class="exercise-name">${user.username} ${user.is_me ? '(You)' : ''}</span>
+      </div>
+      <strong style="font-size: 15px; color: #2b8a3e;">${formatTime(user[prKey])}</strong>
+    `;
+    container.appendChild(li);
+  });
+
+  if (validUsers.length === 0) {
+    container.innerHTML = '<li class="exercise-item-row"><span class="exercise-desc-text">No PR records recorded for this distance yet.</span></li>';
+  }
+}
+
+function handleAddFriend() {
+  const input = document.getElementById('add-friend-input');
+  const username = input.value.trim();
+  if (!username) return;
+
+  fetch('/api/friends/request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+    body: JSON.stringify({ username })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) alert(data.error);
+    else {
+      alert(data.message);
+      input.value = '';
+      fetchLeaderboardData(); // Re-fetch to synchronize state
+    }
+  });
+}
+
+function handleRespondRequest(requestId, action) {
+  fetch(`/api/friends/respond/${requestId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+    body: JSON.stringify({ action })
+  })
+  .then(res => res.json())
+  .then(() => fetchLeaderboardData()); // Re-fetch updates accepted friends directly into leaderboard
+}
+
+function handleRemoveFriend(friendId) {
+  if (!confirm("Are you sure you want to remove this friend?")) return;
+  fetch(`/api/friends/remove/${friendId}`, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken }}).then(() => fetchLeaderboardData());
+}
+
+document.addEventListener('DOMContentLoaded', fetchLeaderboardData);
+</script>

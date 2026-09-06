@@ -6,5 +6,7 @@ backend/.env
 
 backend/*.db
 backend/instance
+backend/celerybeat-schedule*
+backend/.ruff_cache/
 
 .DS_Store

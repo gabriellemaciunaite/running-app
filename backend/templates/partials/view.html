@@ -183,7 +183,7 @@ function fetchRunStats() {
   if (workspace) workspace.classList.add("hidden");
   if (syncBtn) syncBtn.disabled = true;
 
-  fetch("{{ url_for('fetch_runs') }}")
+  fetch("{{ url_for('fetch_runs') }}", { headers: { 'X-CSRFToken': csrfToken } })
     .then(response => {
       if (response.redirected) {
         window.location.href = response.url;

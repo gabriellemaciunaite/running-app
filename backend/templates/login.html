@@ -4,6 +4,7 @@
 <main style="padding: 40px; text-align: center;">
     <h2>Login Form</h2>
     <form action="/login" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div>
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>

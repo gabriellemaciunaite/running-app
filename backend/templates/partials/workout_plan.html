@@ -166,7 +166,7 @@ if (genWorkoutBtn) {
 
     fetch("/generate_workout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken }
     })
     .then(response => {
       if (!response.ok) throw new Error("Error occurred when generating a workout plan.");
@@ -200,7 +200,7 @@ if (workspaceArea) {
       }
       fetch(`/toggle_exercise/${exerciseId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken },
         body: JSON.stringify({ completed: isCompleted })
       })
       .catch(err => console.error("Error occurred:", err));

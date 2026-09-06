@@ -1,8 +1,37 @@
 from extensions import db
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from typing import List
+
+class Run(db.Model):
+    __tablename__ = 'run'
+    id = db.Column(db.Integer, primary_key=True)
+    google_session_id = db.Column(db.String(120), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(120), default="Untitled Run")
+    description = db.Column(db.Text, default="")
+    distance_meters = db.Column(db.Float, default=0.0)
+    duration_seconds = db.Column(db.Float, default=0.0)
+    calories_burned = db.Column(db.Integer, default=0)
+    steps = db.Column(db.Integer, default=0)
+    start_time_ms = db.Column(db.BigInteger, nullable=False)
+    end_time_ms = db.Column(db.BigInteger, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship back to User
+    user = db.relationship('User', backref=db.backref('runs', lazy=True, cascade="all, delete-orphan"))
+
+class Friendship(db.Model):
+    __tablename__ = 'friendship'
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending', nullable=False)  # 'pending' or 'accepted'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_friend_requests')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_friend_requests')
 
 class User(UserMixin, db.Model):
     __tablename__ = "user"
@@ -20,7 +49,29 @@ class User(UserMixin, db.Model):
     plans = db.relationship("RunningPlan", backref="user", cascade="all, delete-orphan")
     google_connected = db.Column(db.Boolean, default=False)
     google_access_token = db.Column(db.Text)
+    google_refresh_token = db.Column(db.Text)
     google_token_expires_at = db.Column(db.Integer)
+
+    login_streak = db.Column(db.Integer, default=0)
+    last_login_date = db.Column(db.DateTime, nullable=True)
+    pr_5k = db.Column(db.Float, default=0.0)
+    pr_10k = db.Column(db.Float, default=0.0)
+    pr_marathon = db.Column(db.Float, default=0.0)
+
+    def update_login_streak(self):
+        now = datetime.now()
+        today = now.date()
+
+        if self.last_login_date is None:
+            self.login_streak = 1
+        else:
+            last_date = self.last_login_date.date()
+            if last_date == today - timedelta(days=1):
+                self.login_streak += 1
+            elif last_date < today - timedelta(days=1):
+                self.login_streak = 1  # Reset streak if missed a day
+        self.last_login_date = now
+        db.session.commit()
 
 class RunningPlan(db.Model):
     __tablename__ = "running_plan"
@@ -51,7 +102,7 @@ class Exercise(db.Model):
 
 
 
-class OpenAIExercise(BaseModel):
+class GeminiExercise(BaseModel):
     name: str = Field(description="The name of the exercise")
     sets: int = Field(description="The number of sets of the exercise if 'strength' is chosen")
     reps: str = Field(description="The number of reps of the exercise if 'strength' is chosen")
@@ -59,10 +110,10 @@ class OpenAIExercise(BaseModel):
     time: str = Field(description="The duration of the exercise if 'cardio' is chosen")
     description: str = Field(description="A short sentence describing the exercise")
 
-class OpenAIWorkoutDay(BaseModel):
+class GeminiWorkoutDay(BaseModel):
     day_name: str = Field(description="e.g., 'Day 1: Upper Body'")
-    exercises: List[OpenAIExercise]
+    exercises: List[GeminiExercise]
 
-class OpenAIPlanSchema(BaseModel):
+class GeminiPlanSchema(BaseModel):
     name: str = Field(description="Catchy title for this specific routine")
-    days: List[OpenAIWorkoutDay]
+    days: List[GeminiWorkoutDay]
