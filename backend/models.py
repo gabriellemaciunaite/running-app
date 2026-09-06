@@ -19,6 +19,20 @@ class Run(db.Model):
     end_time_ms = db.Column(db.BigInteger, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def to_dict(self):
+        return {
+            "id": self.google_session_id,
+            "name": self.name,
+            "description": self.description,
+            "duration_seconds": self.duration_seconds,
+            "distance_meters": self.distance_meters,
+            "distance_km": round((self.distance_meters or 0) / 1000.0, 2),
+            "calories_burned": self.calories_burned,
+            "steps": self.steps,
+            "start_time_ms": self.start_time_ms,
+            "end_time_ms": self.end_time_ms,
+        }
+
     # Relationship back to User
     user = db.relationship('User', backref=db.backref('runs', lazy=True, cascade="all, delete-orphan"))
 

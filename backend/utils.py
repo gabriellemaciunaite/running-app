@@ -7,32 +7,37 @@ from backend.extensions import fernet
 load_dotenv()
 
 def check_update(user, distance_meters, duration_seconds):
-    DISTANCES = {
-        "5k": {"min": 4850, "max": 5350},
-        "10k": {"min": 9700, "max": 10500},
-        "marathon": {"min": 41500, "max": 43000},
+    """Updates a user's User object fields if a new PR for a given category has been reached (5k,
+    10k, marathon).
+
+    Returns:
+        Boolean: True if an update has been made, otherwise False.
+    """
+    # Ranges for each distance in which a run will be considered
+    distances = {
+        "pr_5k": (4900, 5100),
+        "pr_10k": (9800, 10200),
+        "pr_marathon": (41500, 42600),
     }
-    updated = False
-    if DISTANCES["5k"]["min"] <= distance_meters <= DISTANCES["5k"]["max"]:
-        if not user.pr_5k or user.pr_5k == 0.0 or duration_seconds < user.pr_5k:
-            user.pr_5k = duration_seconds
-            updated = True
-    if DISTANCES["10k"]["min"] <= distance_meters <= DISTANCES["10k"]["max"]:
-        if not user.pr_10k or user.pr_10k == 0.0 or duration_seconds < user.pr_10k:
-            user.pr_10k = duration_seconds
-            updated = True
-    if DISTANCES["marathon"]["min"] <= distance_meters <= DISTANCES["marathon"]["max"]:
-        if (
-            not user.pr_marathon
-            or user.pr_marathon == 0.0
-            or duration_seconds < user.pr_marathon
-        ):
-            user.pr_marathon = duration_seconds
-            updated = True
-    return updated
+    for field, (min_dis, max_dis) in distances.items():
+        if min_dis <= distance_meters <= max_dis:
+            current_pr = getattr(user, field) or 0.0
+            if current_pr == 0.0 or duration_seconds < current_pr:
+                setattr(user, field, duration_seconds)
+                return True
+            # Function runs for every Run - do not need to check other categories as no overlap
+            break  
+    return False
 
 
 def run_stats(start_ms, end_ms, headers):
+    """Obtains the distance, calories burnt, and steps of a specific run.
+
+    Returns:
+        Dictionary: if successful, a dictionary containing 3 key-value pairs (distance_meters, 
+        calories_burned, steps) is returned, otherwise, each value is nullified (0).
+
+    """
     aggregate_url = "https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate"
     payload = {
         "aggregateBy": [
@@ -45,6 +50,7 @@ def run_stats(start_ms, end_ms, headers):
     }
     res = requests.post(aggregate_url, json=payload, headers=headers)
     stats = {"distance_meters": 0.0, "calories_burned": 0, "steps": 0}
+    # Return dictionary with empty values
     if not res.ok:
         return stats
     data = res.json()
@@ -60,7 +66,6 @@ def run_stats(start_ms, end_ms, headers):
             val_obj = value_list[0]
             num_val = val_obj.get("fpVal", val_obj.get("intVal", 0))
             if "distance" in data_type:
-                # Keep exact unrounded meters internally
                 stats["distance_meters"] += float(num_val)
             elif "calories" in data_type:
                 stats["calories_burned"] += round(num_val)
@@ -69,7 +74,15 @@ def run_stats(start_ms, end_ms, headers):
     return stats
 
 
-def refresh_google_token(user, db) -> str | None:
+def refresh_google_token(user, db):
+    """Generates a new OAuth access token for a specified user (after expiration).
+
+    Returns:
+        String: if successful, the access token is returned as a String.
+        None: if an error has occured, then return None.
+
+    """
+    # User does not have a refresh token - cannot generate a new access token
     if not user.google_refresh_token:
         return None
     token_url = "https://oauth2.googleapis.com/token"
@@ -81,12 +94,13 @@ def refresh_google_token(user, db) -> str | None:
     }
     try:
         response = requests.post(token_url, data=payload, timeout=10)
+        # No errors occurred - return the new access token
         if response.ok:
             data = response.json()
             new_access_token = data.get("access_token")
             user.google_access_token = fernet.encrypt(new_access_token.encode()).decode()
             db.session.commit()
             return new_access_token
-    except requests.RequestException as err:
-        print(f"[ERROR] Failed to refresh token for user {user.id}: {err}")
+    except Exception as e:
+        print(f"[ERROR] Failed to refresh token for user {user.id}: {e}")
     return None
