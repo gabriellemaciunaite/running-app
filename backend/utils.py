@@ -2,10 +2,9 @@ import os
 import requests
 from dotenv import load_dotenv
 from datetime import datetime
-from cryptography.fernet import Fernet
+from backend.extensions import fernet
 
 load_dotenv()
-fernet = Fernet(os.getenv("FERNET_ENCRYPTION_KEY").encode())
 
 def check_update(user, distance_meters, duration_seconds):
     DISTANCES = {

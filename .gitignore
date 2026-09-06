@@ -1,12 +1,18 @@
-backend/venv/
-backend/__pycache__/
+venv/
+.venv.
+env/
+
+__pycache__/
 *.pyc
 
-backend/.env
+.env
+.env.*
 
-backend/*.db
-backend/instance
-backend/celerybeat-schedule*
+*.db
+instance
+celerybeat-schedule*
+celerybeat.pid
 backend/.ruff_cache/
 
 .DS_Store
+Thumbs.db

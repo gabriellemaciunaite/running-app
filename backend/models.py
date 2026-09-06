@@ -1,4 +1,4 @@
-from extensions import db
+from backend.extensions import db
 from flask_login import UserMixin
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field

@@ -17,7 +17,7 @@
         Sync Now
       </button>
     {% else %}
-      <a href="{{ url_for('connect_google') }}" class="save-settings-btn" style="text-decoration: none; display: inline-block;">
+      <a href="{{ url_for('google.connect_google') }}" class="save-settings-btn" style="text-decoration: none; display: inline-block;">
         Connect Google Fit
       </a>
     {% endif %}
@@ -183,7 +183,7 @@ function fetchRunStats() {
   if (workspace) workspace.classList.add("hidden");
   if (syncBtn) syncBtn.disabled = true;
 
-  fetch("{{ url_for('fetch_runs') }}", { headers: { 'X-CSRFToken': csrfToken } })
+  fetch("{{ url_for('google.fetch_runs') }}", { headers: { 'X-CSRFToken': csrfToken } })
     .then(response => {
       if (response.redirected) {
         window.location.href = response.url;
