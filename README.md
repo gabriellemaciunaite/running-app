@@ -59,4 +59,5 @@ One running, you can access the web app at [http://127.0.0.1:5000](http://127.0.
 ---
 
 ## Usage
-Access to the website can be found [here](https://www.website.com). Otherwise follow the instructions set in **Getting Started** for setting it up yourself.
+Access to the website can be found [here](https://running-app-iam1.onrender.com) (note only pre-approved accounts can link to Google Fit, and automated synchronization is disabled in this demo).\
+Otherwise follow the instructions set in **Getting Started** for setting it up yourself.
