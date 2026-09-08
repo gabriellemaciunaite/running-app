@@ -126,181 +126,181 @@
 </style>
 
 <script>
-let leaderboardCache = [];
+  let leaderboardCache = [];
 
-function formatTime(seconds) {
-  // For PR leaderboard - simple boundary checking
-  if (!seconds || seconds <= 0) return "--:--";
-  const hrs = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
-  return `${mins}m ${secs}s`;
-}
+  function formatTime(seconds) {
+    // For PR leaderboard - simple boundary checking
+    if (!seconds || seconds <= 0) return "--:--";
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+    return `${mins}m ${secs}s`;
+  }
 
-function fetchLeaderboardData() {
-  fetch('/api/leaderboard-data', {headers: { 'X-CSRFToken': csrfToken }})
+  function fetchLeaderboardData() {
+    fetch('/api/leaderboard-data', {headers: { 'X-CSRFToken': csrfToken }})
+      .then(res => res.json())
+      .then(data => {
+        leaderboardCache = data.friends || [];
+        renderPendingRequests(data.incoming_requests || []);
+        renderFriendsManager();
+        renderDistanceBoard();
+        renderPRBoard();
+
+        const me = leaderboardCache.find(u => u.is_me);
+        if (me) document.getElementById('my-streak-count').textContent = me.streak;
+      })
+      .catch(err => console.error("Error loading leaderboard:", err));
+  }
+
+  function renderPendingRequests(requests) {
+    const wrapper = document.getElementById('pending-requests-wrapper');
+    const container = document.getElementById('pending-requests-list');
+    container.innerHTML = '';
+
+    if (requests.length === 0) {
+      wrapper.classList.add('hidden');
+      return;
+    }
+
+    wrapper.classList.remove('hidden');
+
+    requests.forEach(req => {
+      const li = document.createElement('li');
+      li.className = 'exercise-item-row';
+      li.style.justifyContent = 'space-between';
+      li.style.alignItems = 'center';
+      li.innerHTML = `
+        <div class="exercise-details">
+          <span class="exercise-name">${req.sender_username}</span>
+          <span class="exercise-metrics-badge">wants to connect with you</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="handleRespondRequest(${req.request_id}, 'accept')" class="btn-accept">Accept</button>
+          <button onclick="handleRespondRequest(${req.request_id}, 'decline')" class="btn-decline">Decline</button>
+        </div>
+      `;
+      container.appendChild(li);
+    });
+  }
+
+  function renderFriendsManager() {
+    const container = document.getElementById('friends-manage-list');
+    container.innerHTML = '';
+
+    leaderboardCache.forEach(friend => {
+      if (friend.is_me) return;
+      const li = document.createElement('li');
+      li.className = 'exercise-item-row';
+      li.style.justifyContent = 'space-between';
+      li.style.alignItems = 'center';
+      const meters = (friend.weekly_km || 0) * 1000;
+      const rank = friend.rank ? `Rank #${friend.rank}` : "Unranked";
+      li.innerHTML = `
+        <div class="exercise-details">
+          <span class="exercise-name">${friend.username}</span>
+          <span class="exercise-metrics-badge">
+            🪙 ${meters} pts | ${rank} 
+          </span>
+        </div>
+        <button onclick="handleRemoveFriend(${friend.id})" style="background: none; border: none; color: #e03131; cursor: pointer; font-size: 13px; font-weight: 600;">
+          Remove
+        </button>
+      `;
+      container.appendChild(li);
+    });
+
+    if (container.children.length === 0) {
+      container.innerHTML = '<li class="exercise-item-row"><span class="exercise-desc-text">No friends added yet.</span></li>';
+    }
+  }
+
+  function renderDistanceBoard() {
+    const container = document.getElementById('board-distance-list');
+    container.innerHTML = '';
+
+    const sorted = [...leaderboardCache].sort((a, b) => b.weekly_km - a.weekly_km);
+
+    sorted.forEach((user, index) => {
+      const rank = index + 1;
+      const li = document.createElement('li');
+      li.className = `exercise-item-row ${user.is_me ? 'my-row-highlight' : ''}`;
+      li.innerHTML = `
+        <span class="leaderboard-rank rank-${rank}">${rank}</span>
+        <div class="exercise-details">
+          <span class="exercise-name">${user.username} ${user.is_me ? '(You)' : ''}</span>
+          <span class="exercise-metrics-badge">🔥 ${user.streak} day streak</span>
+        </div>
+        <strong style="font-size: 15px; color: #0066cc;">${user.weekly_km.toFixed(2)} km</strong>
+      `;
+      container.appendChild(li);
+    });
+  }
+
+  function renderPRBoard() {
+    const category = document.getElementById('pr-category-select').value;
+    const prKey = `pr_${category}`;
+    const container = document.getElementById('board-pr-list');
+    container.innerHTML = '';
+
+    const validUsers = leaderboardCache.filter(u => u[prKey] && u[prKey] > 0);
+    validUsers.sort((a, b) => a[prKey] - b[prKey]);
+
+    validUsers.forEach((user, index) => {
+      const rank = index + 1;
+      const li = document.createElement('li');
+      li.className = `exercise-item-row ${user.is_me ? 'my-row-highlight' : ''}`;
+      li.innerHTML = `
+        <span class="leaderboard-rank rank-${rank}">${rank}</span>
+        <div class="exercise-details">
+          <span class="exercise-name">${user.username} ${user.is_me ? '(You)' : ''}</span>
+        </div>
+        <strong style="font-size: 15px; color: #2b8a3e;">${formatTime(user[prKey])}</strong>
+      `;
+      container.appendChild(li);
+    });
+
+    if (validUsers.length === 0) {
+      container.innerHTML = '<li class="exercise-item-row"><span class="exercise-desc-text">No PR records recorded for this distance yet.</span></li>';
+    }
+  }
+
+  function handleAddFriend() {
+    const input = document.getElementById('add-friend-input');
+    const username = input.value.trim();
+    if (!username) return;
+
+    fetch('/api/friends/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+      body: JSON.stringify({ username })
+    })
     .then(res => res.json())
     .then(data => {
-      leaderboardCache = data.friends || [];
-      renderPendingRequests(data.incoming_requests || []);
-      renderFriendsManager();
-      renderDistanceBoard();
-      renderPRBoard();
+      if (data.error) alert(data.error);
+      else {
+        alert(data.message);
+        input.value = '';
+        fetchLeaderboardData(); // Re-fetch to synchronize state
+      }
+    });
+  }
 
-      const me = leaderboardCache.find(u => u.is_me);
-      if (me) document.getElementById('my-streak-count').textContent = me.streak;
+  function handleRespondRequest(requestId, action) {
+    fetch(`/api/friends/respond/${requestId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+      body: JSON.stringify({ action })
     })
-    .catch(err => console.error("Error loading leaderboard:", err));
-}
-
-function renderPendingRequests(requests) {
-  const wrapper = document.getElementById('pending-requests-wrapper');
-  const container = document.getElementById('pending-requests-list');
-  container.innerHTML = '';
-
-  if (requests.length === 0) {
-    wrapper.classList.add('hidden');
-    return;
+    .then(res => res.json())
+    .then(() => fetchLeaderboardData()); // Re-fetch updates accepted friends directly into leaderboard
   }
 
-  wrapper.classList.remove('hidden');
-
-  requests.forEach(req => {
-    const li = document.createElement('li');
-    li.className = 'exercise-item-row';
-    li.style.justifyContent = 'space-between';
-    li.style.alignItems = 'center';
-    li.innerHTML = `
-      <div class="exercise-details">
-        <span class="exercise-name">${req.sender_username}</span>
-        <span class="exercise-metrics-badge">wants to connect with you</span>
-      </div>
-      <div style="display: flex; gap: 8px;">
-        <button onclick="handleRespondRequest(${req.request_id}, 'accept')" class="btn-accept">Accept</button>
-        <button onclick="handleRespondRequest(${req.request_id}, 'decline')" class="btn-decline">Decline</button>
-      </div>
-    `;
-    container.appendChild(li);
-  });
-}
-
-function renderFriendsManager() {
-  const container = document.getElementById('friends-manage-list');
-  container.innerHTML = '';
-
-  leaderboardCache.forEach(friend => {
-    if (friend.is_me) return;
-    const li = document.createElement('li');
-    li.className = 'exercise-item-row';
-    li.style.justifyContent = 'space-between';
-    li.style.alignItems = 'center';
-    const meters = (friend.weekly_km || 0) * 1000;
-    const rank = friend.rank ? `Rank #${friend.rank}` : "Unranked";
-    li.innerHTML = `
-      <div class="exercise-details">
-        <span class="exercise-name">${friend.username}</span>
-        <span class="exercise-metrics-badge">
-          🪙 ${meters} pts | ${rank} 
-        </span>
-      </div>
-      <button onclick="handleRemoveFriend(${friend.id})" style="background: none; border: none; color: #e03131; cursor: pointer; font-size: 13px; font-weight: 600;">
-        Remove
-      </button>
-    `;
-    container.appendChild(li);
-  });
-
-  if (container.children.length === 0) {
-    container.innerHTML = '<li class="exercise-item-row"><span class="exercise-desc-text">No friends added yet.</span></li>';
+  function handleRemoveFriend(friendId) {
+    if (!confirm("Are you sure you want to remove this friend?")) return;
+    fetch(`/api/friends/remove/${friendId}`, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken }}).then(() => fetchLeaderboardData());
   }
-}
 
-function renderDistanceBoard() {
-  const container = document.getElementById('board-distance-list');
-  container.innerHTML = '';
-
-  const sorted = [...leaderboardCache].sort((a, b) => b.weekly_km - a.weekly_km);
-
-  sorted.forEach((user, index) => {
-    const rank = index + 1;
-    const li = document.createElement('li');
-    li.className = `exercise-item-row ${user.is_me ? 'my-row-highlight' : ''}`;
-    li.innerHTML = `
-      <span class="leaderboard-rank rank-${rank}">${rank}</span>
-      <div class="exercise-details">
-        <span class="exercise-name">${user.username} ${user.is_me ? '(You)' : ''}</span>
-        <span class="exercise-metrics-badge">🔥 ${user.streak} day streak</span>
-      </div>
-      <strong style="font-size: 15px; color: #0066cc;">${user.weekly_km.toFixed(2)} km</strong>
-    `;
-    container.appendChild(li);
-  });
-}
-
-function renderPRBoard() {
-  const category = document.getElementById('pr-category-select').value;
-  const prKey = `pr_${category}`;
-  const container = document.getElementById('board-pr-list');
-  container.innerHTML = '';
-
-  const validUsers = leaderboardCache.filter(u => u[prKey] && u[prKey] > 0);
-  validUsers.sort((a, b) => a[prKey] - b[prKey]);
-
-  validUsers.forEach((user, index) => {
-    const rank = index + 1;
-    const li = document.createElement('li');
-    li.className = `exercise-item-row ${user.is_me ? 'my-row-highlight' : ''}`;
-    li.innerHTML = `
-      <span class="leaderboard-rank rank-${rank}">${rank}</span>
-      <div class="exercise-details">
-        <span class="exercise-name">${user.username} ${user.is_me ? '(You)' : ''}</span>
-      </div>
-      <strong style="font-size: 15px; color: #2b8a3e;">${formatTime(user[prKey])}</strong>
-    `;
-    container.appendChild(li);
-  });
-
-  if (validUsers.length === 0) {
-    container.innerHTML = '<li class="exercise-item-row"><span class="exercise-desc-text">No PR records recorded for this distance yet.</span></li>';
-  }
-}
-
-function handleAddFriend() {
-  const input = document.getElementById('add-friend-input');
-  const username = input.value.trim();
-  if (!username) return;
-
-  fetch('/api/friends/request', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-    body: JSON.stringify({ username })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.error) alert(data.error);
-    else {
-      alert(data.message);
-      input.value = '';
-      fetchLeaderboardData(); // Re-fetch to synchronize state
-    }
-  });
-}
-
-function handleRespondRequest(requestId, action) {
-  fetch(`/api/friends/respond/${requestId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-    body: JSON.stringify({ action })
-  })
-  .then(res => res.json())
-  .then(() => fetchLeaderboardData()); // Re-fetch updates accepted friends directly into leaderboard
-}
-
-function handleRemoveFriend(friendId) {
-  if (!confirm("Are you sure you want to remove this friend?")) return;
-  fetch(`/api/friends/remove/${friendId}`, { method: 'DELETE', headers: { 'X-CSRFToken': csrfToken }}).then(() => fetchLeaderboardData());
-}
-
-document.addEventListener('DOMContentLoaded', fetchLeaderboardData);
+  document.addEventListener('DOMContentLoaded', fetchLeaderboardData);
 </script>

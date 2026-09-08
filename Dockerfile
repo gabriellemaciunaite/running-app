@@ -20,6 +20,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy current dir in the project to workdir in the image
 COPY . .
 
+RUN addgroup --system celerygroup && adduser --system --ingroup celerygroup celeryuser
+# Set working directory permissions
+RUN chown -R celeryuser:celerygroup /app
+# Switch away from root user
+USER celeryuser
+
 # Expose Flask web port
 EXPOSE 5000
 

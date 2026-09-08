@@ -137,41 +137,140 @@
 </script>
 
 <style>
-  .form-step.hidden {
-    display: none;
+  /* Base card container matching RunOS cards and layout */
+  .onboarding-container {
+    max-width: 460px;
+    margin: 60px auto;
+    padding: 32px;
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
-  .onboarding-container {
-    max-w: 400px;
-    margin: 40px auto;
-    font-family: sans-serif;
-  }
-  
+  /* Progress track & active fill */
   .progress-container {
     width: 100%;
-    background-color: #f0f0f0;
-    height: 8px;
-    margin-bottom: 20px;
+    background-color: #f1f3f5;
+    height: 6px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+    overflow: hidden;
   }
 
   #progress-bar {
     width: 25%;
     height: 100%;
     background-color: #0066cc;
+    border-radius: 999px;
+    transition: width 0.25s ease-in-out;
   }
 
+  /* Form step visibility and typography */
+  .form-step.hidden {
+    display: none !important;
+  }
+
+  .form-step h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+    margin: 0 0 6px 0;
+  }
+
+  .form-step p {
+    margin: 0 0 20px 0;
+  }
+
+  .form-step p small {
+    font-size: 13px;
+    color: #6c757d;
+  }
+
+  /* Input fields & dropdowns */
+  select,
+  input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #495057;
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    box-sizing: border-box;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  select:focus,
+  input[type="number"]:focus {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15);
+  }
+
+  /* Step 3 input group spacing */
   .input-group {
-    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
   .input-group label {
     display: block;
-    margin-bottom: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
   }
 
+  /* Action buttons */
   .button-container {
     display: flex;
     justify-content: space-between;
-    margin-top: 20px;
+    align-items: center;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  #prevBtn {
+    background-color: transparent;
+    border: 1px solid #e9ecef;
+    color: #495057;
+  }
+
+  #prevBtn:hover {
+    background-color: #f1f3f5;
+    color: #1a1a1a;
+  }
+
+  #nextBtn {
+    background-color: #0066cc;
+    color: #ffffff;
+    margin-left: auto;
+  }
+
+  #nextBtn:hover:not(:disabled) {
+    background-color: #0052a3;
+  }
+
+  #nextBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>

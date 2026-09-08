@@ -204,6 +204,7 @@
     handleFormSubmit("personalDetailsForm");
     handleFormSubmit("trainingPreferencesForm");
   });
+
   function handleFormSubmit(formId) {
     const form = document.getElementById(formId);
     if (!form) return;
@@ -215,6 +216,7 @@
       const originalBtnText = saveSettingsBtn.textContent;
       saveSettingsBtn.disabled = true;
       saveSettingsBtn.textContent = "Saving...";
+      // Submit form data and store in SQL db
       fetch("/customize", {
         method: "POST",
         headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken },

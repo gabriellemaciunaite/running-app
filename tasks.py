@@ -12,7 +12,7 @@ from backend.routes.google import sync_user_runs
 
 app = create_app()
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+@shared_task(bind=True, max_retries=3, default_retry_delay=60, rate_limit='10/s')
 def sync_google_fit_data(self, user_id):
     """Syncs a user's runs via Google Fit if they are connected and returns their user id along
     with the number of their runs, otherwise return a invalid status along with their user id.
@@ -29,7 +29,7 @@ def sync_google_fit_data(self, user_id):
             return {"status": "success", "user_id": user_id, "synced_runs": len(runs)}
         except Exception as e:
             db.session.rollback()
-            raise self.retry(e=e)
+            raise self.retry(exc=e)
         finally:
             db.session.remove()
 

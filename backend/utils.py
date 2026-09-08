@@ -3,6 +3,7 @@ import requests
 from dotenv import load_dotenv
 from datetime import datetime
 from backend.extensions import fernet
+from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
@@ -98,6 +99,7 @@ def refresh_google_token(user, db):
         if response.ok:
             data = response.json()
             new_access_token = data.get("access_token")
+            user.google_token_expires_at = int((datetime.now(timezone.utc)).timestamp()) + data.get("expires_in")
             user.google_access_token = fernet.encrypt(new_access_token.encode()).decode()
             db.session.commit()
             return new_access_token

@@ -154,57 +154,57 @@
 </style>
 
 <script>
-const genWorkoutBtn = document.getElementById("generateWorkoutBtn");
-const spinner = document.getElementById("workout-loading-spinner");
-const workspace = document.getElementById("active-workout-workspace");
+  const genWorkoutBtn = document.getElementById("generateWorkoutBtn");
+  const spinner = document.getElementById("workout-loading-spinner");
+  const workspace = document.getElementById("active-workout-workspace");
 
-if (genWorkoutBtn) {
-  genWorkoutBtn.addEventListener("click", function () {
-    genWorkoutBtn.disabled = true;
-    spinner.classList.remove("hidden");
-    workspace.classList.add("hidden");
+  if (genWorkoutBtn) {
+    genWorkoutBtn.addEventListener("click", function () {
+      genWorkoutBtn.disabled = true;
+      spinner.classList.remove("hidden");
+      workspace.classList.add("hidden");
 
-    fetch("/generate_workout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken }
-    })
-    .then(response => {
-      if (!response.ok) throw new Error("Error occurred when generating a workout plan.");
-      return response.json();
-    })
-    .then(data => {
-      window.location.reload();
-    })
-    .catch(error => {
-      console.error("Error:", error);
-      alert("Failed to build workout data.");
-      genWorkoutBtn.disabled = false;
-      spinner.classList.add("hidden");
-      workspace.classList.remove("hidden");
-    });
-  });
-}
-
-const workspaceArea = document.getElementById("active-workout-workspace");
-if (workspaceArea) {
-  workspaceArea.addEventListener("change", function (event) {
-    if (event.target.classList.contains("exercise-toggle-cb")) {
-      const cb = event.target;
-      const exerciseId = cb.getAttribute("data-exercise-id");
-      const rowItem = cb.closest(".exercise-item-row");
-      const isCompleted = cb.checked;
-      if (isCompleted) {
-        rowItem.classList.add("exercise-done");
-      } else {
-        rowItem.classList.remove("exercise-done");
-      }
-      fetch(`/toggle_exercise/${exerciseId}`, {
+      fetch("/generate_workout", {
         method: "POST",
-        headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken },
-        body: JSON.stringify({ completed: isCompleted })
+        headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken }
       })
-      .catch(err => console.error("Error occurred:", err));
-    }
-  });
-}
+      .then(response => {
+        if (!response.ok) throw new Error("Error occurred when generating a workout plan.");
+        return response.json();
+      })
+      .then(data => {
+        window.location.reload();
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        alert("Failed to build workout data.");
+        genWorkoutBtn.disabled = false;
+        spinner.classList.add("hidden");
+        workspace.classList.remove("hidden");
+      });
+    });
+  }
+
+  const workspaceArea = document.getElementById("active-workout-workspace");
+  if (workspaceArea) {
+    workspaceArea.addEventListener("change", function (event) {
+      if (event.target.classList.contains("exercise-toggle-cb")) {
+        const cb = event.target;
+        const exerciseId = cb.getAttribute("data-exercise-id");
+        const rowItem = cb.closest(".exercise-item-row");
+        const isCompleted = cb.checked;
+        if (isCompleted) {
+          rowItem.classList.add("exercise-done");
+        } else {
+          rowItem.classList.remove("exercise-done");
+        }
+        fetch(`/toggle_exercise/${exerciseId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", 'X-CSRFToken': csrfToken },
+          body: JSON.stringify({ completed: isCompleted })
+        })
+        .catch(err => console.error("Error occurred:", err));
+      }
+    });
+  }
 </script>

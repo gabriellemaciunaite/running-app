@@ -87,6 +87,8 @@ def sync_user_runs(user):
     """
     if not user or not user.google_connected or not user.google_access_token:
         return []
+    if user.google_token_expires_at <= int((datetime.now(timezone.utc) + timedelta(seconds=60)).timestamp()):
+        refresh_google_token(user, db)
     try:
         decrypted_token = fernet.decrypt(user.google_access_token.encode()).decode()
     except Exception as e:
@@ -101,6 +103,9 @@ def sync_user_runs(user):
             return jsonify({"error": f"Failed to refresh token"}), 500
         headers = {"Authorization": f"Bearer {new_token}"}
         response = requests.get(url, headers=headers, timeout=10)
+    if response.status_code == 403:
+        user.google_connected = False
+        return jsonify({"error": f"Access denied when retrieving Google Fit data. Please reconnect."}), 500
     if not response.ok:
         return jsonify({"error": f"Error occurred when retrieving Google Fit data: {str(e)}"}), 500
 
