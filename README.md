@@ -17,21 +17,10 @@ A running app built with **Flask**, **Redis**, and **Celery**. Features automate
 
 ## 1. Installation & Environment Setup
 
-### Clone the repository:
+Clone the repository:
 ```
 git clone https://github.com/gabriellemaciunaite/running-app.git
 cd running-app/backend
-```
-### Create and activate venv:
-```
-python3 -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
-```
-
-### Install dependencies:
-```
-pip install -r requirements.txt
-
 ```
 
 ## 2. Configure environment variables:
@@ -47,7 +36,9 @@ GEMINI_API_KEY=your_gemini_api_key
 GOOGLE_CLIENT_ID=your_google_fit_client_id
 GOOGLE_CLIENT_SECRET=your_google_fit_client_secret
 FERNET_ENCRYPTION_KEY=your_32-byte_b65_string
-REDIS_URL=your_redis_url
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/1
+CELERY_RESULT_BACKEND=redis://redis:6379/2
 
 ```
 
@@ -55,31 +46,17 @@ REDIS_URL=your_redis_url
 
 ## 3. Running the App
 
-You need **three terminal windows** running simultaneously:
+You need **Docker** for this setup.
 
-#### Terminal 1: Start Redis
-
-```
-sudo service redis-server start
+To build the images and start the containers in the background:
 
 ```
-
-#### Terminal 2: Start Celery Beat & Worker (for the Google Fit Sync)
-
-```bash
-# Start Celery Beat Scheduler & Worker
-celery -A app.celery worker -B --loglevel=info
+docker compose up -d --build
 
 ```
-
-#### Terminal 3: Start the Flask Server
-
-```bash
-flask run
-
-```
+One running, you can access the web app at [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
 ---
 
 ## Usage
-Access to the website can be found [here](https://www.website.com). Otherwise follow the instructions set in Installation for setting it up yourself.
+Access to the website can be found [here](https://www.website.com). Otherwise follow the instructions set in **Getting Started** for setting it up yourself.
