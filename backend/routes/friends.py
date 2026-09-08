@@ -3,7 +3,6 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from backend.extensions import db, redis_client
 from backend.models import User, Friendship
-from datetime import datetime, timedelta, timezone
 
 friends_bp = Blueprint("friends", __name__, url_prefix="/api")
 
@@ -39,7 +38,6 @@ def get_leaderboard_data():
     year, week, _ = datetime.now(timezone.utc).isocalendar()
     redis_key = f"leaderboard:distance:{year}-W{week}"
     users = db.session.execute(db.select(User).where(User.id.in_(friend_ids))).scalars().all()
-
     # For each user that is a friend of current_user, add to results a pair containing the user's
     # rank and their weekly distance
     pipe = redis_client.pipeline()
