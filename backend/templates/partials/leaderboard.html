@@ -129,6 +129,7 @@
 let leaderboardCache = [];
 
 function formatTime(seconds) {
+  // For PR leaderboard - simple boundary checking
   if (!seconds || seconds <= 0) return "--:--";
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
